@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Node
+node_modules/
+packages/contracts/dist/
+*.tsbuildinfo
+
+# Local data / uploads (never commit document content)
+data/storage/*
+!data/storage/.gitkeep
+*.docx
+*.pdf
+*.doc
+*.xlsx
+*.pptx
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Docker / compose overrides with secrets
+docker-compose.override.yml
+compose.override.yaml
+
+# Eval reports (generated)
+evals/reports/*
+!evals/reports/.gitkeep
+
+# Secrets
+*.pem
+*.key
+.secrets/
