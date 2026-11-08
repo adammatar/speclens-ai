@@ -42,3 +42,20 @@ def enqueue_ingest_job(job_id: uuid.UUID) -> str:
         extra={"job_id": str(job_id), "celery_task_id": task_id},
     )
     return task_id
+
+
+def enqueue_embed_document_version(document_version_id: uuid.UUID) -> str:
+    """Publish speclens.embed_document_version for chunk embedding."""
+    async_result = get_celery_client().send_task(
+        "speclens.embed_document_version",
+        args=[str(document_version_id)],
+    )
+    task_id = str(async_result.id)
+    logger.info(
+        "embed_job_enqueued",
+        extra={
+            "document_version_id": str(document_version_id),
+            "celery_task_id": task_id,
+        },
+    )
+    return task_id

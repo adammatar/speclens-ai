@@ -19,6 +19,35 @@ def noop_job(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"status": "ok", "echo": data}
 
 
+@app.task(name="speclens.embed_document_version", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
+def embed_document_version(self: Any, document_version_id: str) -> dict[str, object]:
+    """Embed all chunks for a document version."""
+    from app.db.session import get_session_factory
+    from app.embeddings.pipeline import run_embed_document_version
+
+    session = get_session_factory()()
+    try:
+        return run_embed_document_version(session, uuid.UUID(document_version_id))
+    except LookupError as exc:
+        logger.error(
+            "embed_document_permanent_failure",
+            extra={"document_version_id": document_version_id, "error": str(exc)},
+        )
+        return {
+            "status": "failed",
+            "document_version_id": document_version_id,
+            "error": str(exc),
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.exception(
+            "embed_document_task_failed",
+            extra={"document_version_id": document_version_id},
+        )
+        raise self.retry(exc=exc) from exc
+    finally:
+        session.close()
+
+
 @app.task(name="speclens.ingest_document", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
 def ingest_document(self: Any, job_id: str) -> dict[str, object]:
     """Run the document ingestion pipeline for a queued job."""
@@ -28,7 +57,12 @@ def ingest_document(self: Any, job_id: str) -> dict[str, object]:
 
     session = get_session_factory()()
     try:
-        return run_ingestion_job(session, uuid.UUID(job_id))
+        result = run_ingestion_job(session, uuid.UUID(job_id))
+        version_id = result.get("document_version_id")
+        if result.get("status") == "succeeded" and version_id:
+            # Chain embedding without blocking the API upload path.
+            embed_document_version.delay(str(version_id))
+        return result
     except (ParseError, LookupError) as exc:
         # Permanent failures are already persisted by the pipeline.
         logger.error(

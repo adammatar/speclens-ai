@@ -9,7 +9,9 @@ export type ApiPath =
   | "/api/v1/documents/versions/{document_version_id}/reprocess"
   | "/api/v1/documents/{document_id}"
   | "/api/v1/health"
-  | "/api/v1/ready";
+  | "/api/v1/ready"
+  | "/api/v1/search"
+  | "/api/v1/search/debug";
 
 export interface HealthResponse {
   status: "ok";
@@ -28,4 +30,6 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/documents/{document_id}",
   "/api/v1/health",
   "/api/v1/ready",
+  "/api/v1/search",
+  "/api/v1/search/debug",
 ];

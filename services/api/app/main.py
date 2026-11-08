@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import __version__
-from app.api.routes import documents, health
+from app.api.routes import documents, health, search
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -32,6 +32,7 @@ def create_app() -> FastAPI:
     )
     application.include_router(health.router, prefix="/api/v1")
     application.include_router(documents.router, prefix="/api/v1")
+    application.include_router(search.router, prefix="/api/v1")
     return application
 
 
