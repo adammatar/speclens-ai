@@ -81,6 +81,34 @@ jobs:
           docker compose -f infra/compose.yaml exec -T worker \
             python -c "from speclens_worker.tasks import noop_job; print(noop_job.delay({'ci': True}).get(timeout=30))"
 
+      - name: Upload and ingest Markdown fixture
+        run: |
+          set -euo pipefail
+          UPLOAD=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/documents/upload \
+            -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown" \
+            -F "title=CI Sample")
+          echo "$UPLOAD"
+          JOB_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$UPLOAD")
+          VER_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_version_id'])" "$UPLOAD")
+          for i in $(seq 1 30); do
+            JOB=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB_ID}")
+            STATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$JOB")
+            if [ "$STATUS" = "succeeded" ]; then
+              break
+            fi
+            if [ "$STATUS" = "failed" ]; then
+              echo "$JOB"
+              exit 1
+            fi
+            sleep 1
+          done
+          test "$STATUS" = "succeeded"
+          CHUNKS=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/versions/${VER_ID}/chunks")
+          python -c "import json,sys; c=json.loads(sys.argv[1]); assert len(c) > 0" "$CHUNKS"
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8000/api/v1/documents/upload \
+            -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown")
+          test "$CODE" = "409"
+
       - name: Tear down
         if: always()
         run: docker compose -f infra/compose.yaml down -v
