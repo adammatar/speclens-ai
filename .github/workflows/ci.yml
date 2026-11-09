@@ -148,6 +148,52 @@ jobs:
           python -c "import json,sys; rows=json.loads(sys.argv[1]); assert rows; assert all(r.get('sources') and any((s.get('source_quote') or '').strip() for s in r['sources']) for r in rows); assert all(r.get('original_payload') for r in rows)" "$REQS"
           EXPORT=$(curl -sf "http://127.0.0.1:8000/api/v1/requirements/export?format=json&document_version_id=${VER_ID}")
           python -c "import json,sys; rows=json.loads(sys.argv[1]); assert isinstance(rows, list) and rows" "$EXPORT"
+          DOC_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_id'])" "$UPLOAD")
+          printf '%s\n\nThe system shall emit structured audit events for rejected uploads.\nCI compare %s\n' "$(cat services/api/tests/fixtures/sample.md)" "$RANDOM" > /tmp/sample-v2.md
+          sed -i 's/preserve heading paths on every chunk/preserve heading paths on every chunk for navigation/' /tmp/sample-v2.md
+          UP2=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/documents/${DOC_ID}/versions" \
+            -F "file=@/tmp/sample-v2.md;type=text/markdown")
+          VER2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_version_id'])" "$UP2")
+          JOB2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$UP2")
+          for i in $(seq 1 30); do
+            JOB=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB2}")
+            STATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$JOB")
+            if [ "$STATUS" = "succeeded" ] || [ "$STATUS" = "failed" ]; then break; fi
+            sleep 1
+          done
+          test "$STATUS" = "succeeded"
+          for i in $(seq 1 40); do
+            COUNT=$(docker compose -f infra/compose.yaml exec -T postgres \
+              psql -U speclens -d speclens -Atc "select count(*) from chunk_embeddings where document_version_id='${VER2}'")
+            if [ "$COUNT" -gt 0 ]; then break; fi
+            sleep 1
+          done
+          test "$COUNT" -gt 0
+          EXT2=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/documents/versions/${VER2}/extractions")
+          EJOB2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$EXT2")
+          for i in $(seq 1 40); do
+            EJ=$(curl -sf "http://127.0.0.1:8000/api/v1/extractions/${EJOB2}")
+            ESTATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$EJ")
+            if [ "$ESTATUS" = "succeeded" ] || [ "$ESTATUS" = "failed" ]; then break; fi
+            sleep 1
+          done
+          test "$ESTATUS" = "succeeded"
+          CMP=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/comparisons \
+            -H 'Content-Type: application/json' \
+            -d "{\"base_document_version_id\":\"${VER_ID}\",\"target_document_version_id\":\"${VER2}\"}")
+          CJOB=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$CMP")
+          for i in $(seq 1 40); do
+            CJ=$(curl -sf "http://127.0.0.1:8000/api/v1/comparisons/${CJOB}")
+            CSTATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$CJ")
+            if [ "$CSTATUS" = "succeeded" ] || [ "$CSTATUS" = "failed" ]; then break; fi
+            sleep 1
+          done
+          test "$CSTATUS" = "succeeded"
+          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['changes']; assert all((c.get('old_source_quote') or c.get('new_source_quote')) if c['category'] in ('added','removed') else (c.get('old_source_quote') and c.get('new_source_quote')) for c in d['changes']); open('/tmp/chg','w').write(d['changes'][0]['id'])" "$CJ"
+          CHG=$(cat /tmp/chg)
+          DEC=$(curl -sf -X PATCH "http://127.0.0.1:8000/api/v1/comparisons/changes/${CHG}" \
+            -H 'Content-Type: application/json' -d '{"decision":"confirmed"}')
+          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['decision']=='confirmed' and d['is_eval_example'] is True" "$DEC"
 
       - name: Tear down
         if: always()

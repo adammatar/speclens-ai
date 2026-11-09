@@ -86,6 +86,30 @@ class RequirementReviewState(enum.StrEnum):
     REJECTED = "rejected"
 
 
+class ComparisonJobStatus(enum.StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class ChangeCategory(enum.StrEnum):
+    ADDED = "added"
+    REMOVED = "removed"
+    CLARIFIED = "clarified"
+    BEHAVIOR_CHANGED = "behavior_changed"
+    PRIORITY_CHANGED = "priority_changed"
+    ACCEPTANCE_CRITERIA_CHANGED = "acceptance_criteria_changed"
+    POTENTIAL_BREAKING_CHANGE = "potential_breaking_change"
+    UNCERTAIN = "uncertain"
+
+
+class ChangeDecision(enum.StrEnum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+
+
 class HealthProbe(Base):
     """Tiny table used to prove migrations apply on an empty database."""
 
@@ -617,6 +641,10 @@ class Requirement(Base):
     )
     original_payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
     is_eval_example: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    jira_ticket_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_file: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    test_case_id: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    implementation_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -630,3 +658,131 @@ class Requirement(Base):
     )
 
     extraction_job: Mapped[ExtractionJob] = relationship(back_populates="requirements")
+
+
+class ComparisonJob(Base):
+    """Background job comparing requirements across two document versions."""
+
+    __tablename__ = "comparison_jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    base_document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[ComparisonJobStatus] = mapped_column(
+        Enum(
+            ComparisonJobStatus,
+            name="comparison_job_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=ComparisonJobStatus.QUEUED,
+    )
+    progress_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    change_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    changes: Mapped[list[RequirementChange]] = relationship(
+        back_populates="comparison_job",
+        cascade="all, delete-orphan",
+    )
+
+
+class RequirementChange(Base):
+    """Detected requirement delta between two document versions."""
+
+    __tablename__ = "requirement_changes"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    comparison_job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("comparison_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    category: Mapped[ChangeCategory] = mapped_column(
+        Enum(
+            ChangeCategory,
+            name="change_category",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+    )
+    base_requirement_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("requirements.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    target_requirement_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("requirements.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    similarity: Mapped[float | None] = mapped_column(Float, nullable=True)
+    old_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_statement: Mapped[str | None] = mapped_column(Text, nullable=True)
+    old_source_quote: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_source_quote: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decision: Mapped[ChangeDecision] = mapped_column(
+        Enum(
+            ChangeDecision,
+            name="change_decision",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=ChangeDecision.PENDING,
+        index=True,
+    )
+    is_eval_example: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    comparison_job: Mapped[ComparisonJob] = relationship(back_populates="changes")

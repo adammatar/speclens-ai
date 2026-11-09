@@ -229,6 +229,59 @@
         }
       }
     },
+    "/api/v1/documents/{document_id}/versions": {
+      "post": {
+        "tags": [
+          "documents"
+        ],
+        "summary": "Upload Document Version Endpoint",
+        "operationId": "upload_document_version_endpoint_api_v1_documents__document_id__versions_post",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_version_endpoint_api_v1_documents__document_id__versions_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadAcceptedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/documents/{document_id}": {
       "get": {
         "tags": [
@@ -899,6 +952,143 @@
           }
         }
       }
+    },
+    "/api/v1/comparisons": {
+      "post": {
+        "tags": [
+          "comparisons"
+        ],
+        "summary": "Start Comparison",
+        "operationId": "start_comparison_api_v1_comparisons_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateComparisonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/comparisons/{job_id}": {
+      "get": {
+        "tags": [
+          "comparisons"
+        ],
+        "summary": "Get Comparison",
+        "operationId": "get_comparison_api_v1_comparisons__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonJobResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/comparisons/changes/{change_id}": {
+      "patch": {
+        "tags": [
+          "comparisons"
+        ],
+        "summary": "Patch Change Decision",
+        "operationId": "patch_change_decision_api_v1_comparisons_changes__change_id__patch",
+        "parameters": [
+          {
+            "name": "change_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Change Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementChangeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -990,6 +1180,20 @@
         ],
         "title": "Body_upload_document_endpoint_api_v1_documents_upload_post"
       },
+      "Body_upload_document_version_endpoint_api_v1_documents__document_id__versions_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_document_version_endpoint_api_v1_documents__document_id__versions_post"
+      },
       "ChunkResponse": {
         "properties": {
           "id": {
@@ -1076,6 +1280,112 @@
         ],
         "title": "CitationResponse"
       },
+      "ComparisonJobResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Workspace Id"
+          },
+          "base_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Base Document Version Id"
+          },
+          "target_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Document Version Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "progress_pct": {
+            "type": "integer",
+            "title": "Progress Pct"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "change_count": {
+            "type": "integer",
+            "title": "Change Count"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/RequirementChangeResponse"
+            },
+            "type": "array",
+            "title": "Changes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "workspace_id",
+          "base_document_version_id",
+          "target_document_version_id",
+          "status",
+          "progress_pct",
+          "attempts",
+          "change_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ComparisonJobResponse"
+      },
       "ConversationDetailResponse": {
         "properties": {
           "id": {
@@ -1157,6 +1467,26 @@
         ],
         "title": "ConversationSummaryResponse"
       },
+      "CreateComparisonRequest": {
+        "properties": {
+          "base_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Base Document Version Id"
+          },
+          "target_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Document Version Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "base_document_version_id",
+          "target_document_version_id"
+        ],
+        "title": "CreateComparisonRequest"
+      },
       "CreateConversationRequest": {
         "properties": {
           "workspace_id": {
@@ -1173,6 +1503,20 @@
         },
         "type": "object",
         "title": "CreateConversationRequest"
+      },
+      "DecideChangeRequest": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "pattern": "^(confirmed|rejected)$",
+            "title": "Decision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "DecideChangeRequest"
       },
       "DocumentResponse": {
         "properties": {
@@ -1394,6 +1738,50 @@
               }
             ],
             "title": "Review State"
+          },
+          "jira_ticket_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jira Ticket Id"
+          },
+          "source_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File"
+          },
+          "test_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Case Id"
+          },
+          "implementation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Implementation Note"
           }
         },
         "type": "object",
@@ -1827,6 +2215,132 @@
         ],
         "title": "ReprocessResponse"
       },
+      "RequirementChangeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "comparison_job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Comparison Job Id"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "base_requirement_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Requirement Id"
+          },
+          "target_requirement_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Requirement Id"
+          },
+          "similarity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity"
+          },
+          "old_statement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Statement"
+          },
+          "new_statement": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Statement"
+          },
+          "old_source_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Source Quote"
+          },
+          "new_source_quote": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Source Quote"
+          },
+          "decision": {
+            "type": "string",
+            "title": "Decision"
+          },
+          "is_eval_example": {
+            "type": "boolean",
+            "title": "Is Eval Example"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "comparison_job_id",
+          "category",
+          "decision",
+          "is_eval_example",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RequirementChangeResponse"
+      },
       "RequirementResponse": {
         "properties": {
           "id": {
@@ -1945,6 +2459,50 @@
           "is_eval_example": {
             "type": "boolean",
             "title": "Is Eval Example"
+          },
+          "jira_ticket_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jira Ticket Id"
+          },
+          "source_file": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File"
+          },
+          "test_case_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Case Id"
+          },
+          "implementation_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Implementation Note"
           },
           "created_at": {
             "type": "string",
@@ -2178,6 +2736,37 @@
           "results"
         ],
         "title": "SearchResponse"
+      },
+      "StartComparisonResponse": {
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Job Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "queued"
+          },
+          "base_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Base Document Version Id"
+          },
+          "target_document_version_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Document Version Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job_id",
+          "base_document_version_id",
+          "target_document_version_id"
+        ],
+        "title": "StartComparisonResponse"
       },
       "StartExtractionResponse": {
         "properties": {

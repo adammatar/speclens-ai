@@ -68,6 +68,10 @@ def edit_requirement(
     dependencies: list[str] | None = None,
     ambiguities: list[str] | None = None,
     review_state: str | None = None,
+    jira_ticket_id: str | None = None,
+    source_file: str | None = None,
+    test_case_id: str | None = None,
+    implementation_note: str | None = None,
 ) -> Requirement:
     requirement = session.get(Requirement, requirement_id)
     if requirement is None:
@@ -88,6 +92,14 @@ def edit_requirement(
         requirement.dependencies = dependencies
     if ambiguities is not None:
         requirement.ambiguities = ambiguities
+    if jira_ticket_id is not None:
+        requirement.jira_ticket_id = jira_ticket_id.strip() or None
+    if source_file is not None:
+        requirement.source_file = source_file.strip() or None
+    if test_case_id is not None:
+        requirement.test_case_id = test_case_id.strip() or None
+    if implementation_note is not None:
+        requirement.implementation_note = implementation_note
 
     if review_state is not None:
         new_state = RequirementReviewState(review_state)

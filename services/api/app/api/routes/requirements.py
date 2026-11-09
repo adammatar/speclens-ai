@@ -105,6 +105,10 @@ def patch_requirement(
             dependencies=body.dependencies,
             ambiguities=body.ambiguities,
             review_state=body.review_state,
+            jira_ticket_id=body.jira_ticket_id,
+            source_file=body.source_file,
+            test_case_id=body.test_case_id,
+            implementation_note=body.implementation_note,
         )
     except ExtractionError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
