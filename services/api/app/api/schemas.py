@@ -179,3 +179,67 @@ class AnswerTurnResponse(BaseModel):
     generation_status: str
     retrieved_chunk_ids: list[str]
     citation_chunk_ids: list[str]
+
+
+class StartExtractionResponse(BaseModel):
+    job_id: uuid.UUID
+    document_version_id: uuid.UUID
+    status: str = "queued"
+
+
+class ExtractionJobResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    document_version_id: uuid.UUID
+    workspace_id: uuid.UUID
+    status: str
+    progress_pct: int
+    section_cursor: int
+    section_total: int
+    error_message: str | None = None
+    attempts: int
+    model_name: str | None = None
+    prompt_version: str | None = None
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+
+
+class RequirementResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    document_id: uuid.UUID
+    document_version_id: uuid.UUID
+    extraction_job_id: uuid.UUID
+    section_path: str
+    external_id: str | None = None
+    requirement_type: str
+    statement: str
+    rationale: str | None = None
+    priority: str
+    acceptance_criteria: list[dict[str, object]] = Field(default_factory=list)
+    dependencies: list[str] = Field(default_factory=list)
+    ambiguities: list[str] = Field(default_factory=list)
+    contradiction_candidates: list[str] = Field(default_factory=list)
+    confidence: float
+    sources: list[dict[str, object]] = Field(default_factory=list)
+    review_state: str
+    original_payload: dict[str, object]
+    is_eval_example: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class EditRequirementRequest(BaseModel):
+    statement: str | None = None
+    rationale: str | None = None
+    requirement_type: str | None = None
+    priority: str | None = None
+    acceptance_criteria: list[dict[str, object]] | None = None
+    dependencies: list[str] | None = None
+    ambiguities: list[str] | None = None
+    review_state: str | None = None

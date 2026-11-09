@@ -9,8 +9,10 @@ from datetime import datetime
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -50,6 +52,38 @@ class MessageStatus(enum.StrEnum):
     COMPLETED = "completed"
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
     FAILED = "failed"
+
+
+class ExtractionJobStatus(enum.StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+
+
+class RequirementType(enum.StrEnum):
+    FUNCTIONAL = "functional"
+    NON_FUNCTIONAL = "non_functional"
+    CONSTRAINT = "constraint"
+    INTERFACE = "interface"
+    SECURITY = "security"
+    PERFORMANCE = "performance"
+    COMPLIANCE = "compliance"
+    UNKNOWN = "unknown"
+
+
+class RequirementPriority(enum.StrEnum):
+    MUST = "must"
+    SHOULD = "should"
+    COULD = "could"
+    UNKNOWN = "unknown"
+
+
+class RequirementReviewState(enum.StrEnum):
+    PROPOSED = "proposed"
+    ACCEPTED = "accepted"
+    EDITED = "edited"
+    REJECTED = "rejected"
 
 
 class HealthProbe(Base):
@@ -441,3 +475,158 @@ class MessageCitation(Base):
     )
 
     message: Mapped[Message] = relationship(back_populates="citations")
+
+
+class ExtractionJob(Base):
+    """Background requirement-extraction job with resumable section cursor."""
+
+    __tablename__ = "extraction_jobs"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[ExtractionJobStatus] = mapped_column(
+        Enum(
+            ExtractionJobStatus,
+            name="extraction_job_status",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=ExtractionJobStatus.QUEUED,
+    )
+    progress_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    section_cursor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    section_total: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    model_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    prompt_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    requirements: Mapped[list[Requirement]] = relationship(
+        back_populates="extraction_job",
+        cascade="all, delete-orphan",
+    )
+
+
+class Requirement(Base):
+    """Extracted requirement with provenance and human review state."""
+
+    __tablename__ = "requirements"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    document_version_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("document_versions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    extraction_job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("extraction_jobs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    section_path: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
+    external_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    requirement_type: Mapped[RequirementType] = mapped_column(
+        Enum(
+            RequirementType,
+            name="requirement_type",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=RequirementType.UNKNOWN,
+    )
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    priority: Mapped[RequirementPriority] = mapped_column(
+        Enum(
+            RequirementPriority,
+            name="requirement_priority",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=RequirementPriority.UNKNOWN,
+    )
+    acceptance_criteria: Mapped[list[dict[str, object]]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+    )
+    dependencies: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    ambiguities: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    contradiction_candidates: Mapped[list[str]] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list,
+    )
+    confidence: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    sources: Mapped[list[dict[str, object]]] = mapped_column(JSONB, nullable=False, default=list)
+    review_state: Mapped[RequirementReviewState] = mapped_column(
+        Enum(
+            RequirementReviewState,
+            name="requirement_review_state",
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+        default=RequirementReviewState.PROPOSED,
+        index=True,
+    )
+    original_payload: Mapped[dict[str, object]] = mapped_column(JSONB, nullable=False)
+    is_eval_example: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    extraction_job: Mapped[ExtractionJob] = relationship(back_populates="requirements")

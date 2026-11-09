@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     qa_min_rrf_score: float = 0.01
     qa_max_context_chunks: int = 8
 
+    extraction_backend: Literal["stub", "openai"] = "stub"
+    extraction_model: str = "speclens-stub-extract-v1"
+    extraction_prompt_version: str = "extraction-v1"
+
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"
