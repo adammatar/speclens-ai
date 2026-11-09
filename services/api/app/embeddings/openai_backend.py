@@ -41,9 +41,11 @@ class OpenAIEmbedder:
         }
         # OpenAI text-embedding-3* accepts dimensions; Gemini/compat often does not.
         model_l = self._model_name.lower()
-        if "text-embedding-3" in model_l or model_l.startswith("text-embedding-ada"):
-            payload["dimensions"] = self._dims
-        elif self._settings_send_dimensions():
+        if (
+            "text-embedding-3" in model_l
+            or model_l.startswith("text-embedding-ada")
+            or self._settings_send_dimensions()
+        ):
             payload["dimensions"] = self._dims
         request = urllib.request.Request(
             f"{self._base_url}/embeddings",
