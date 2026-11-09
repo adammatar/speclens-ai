@@ -105,8 +105,9 @@ def search_chunks(
     vector_rank_map = {chunk_id: idx for idx, chunk_id in enumerate(vector_ids, start=1)}
     vector_distance_map: dict[uuid.UUID, float] = {}
 
-    # Lexical channel (Postgres FTS).
-    tsq = func.plainto_tsquery("english", q)
+    # Lexical channel (Postgres FTS). "simple" keeps multilingual tokens (Hebrew, etc.).
+    fts_config = cfg.search_fts_config or "simple"
+    tsq = func.plainto_tsquery(fts_config, q)
     rank_expr = func.ts_rank_cd(Chunk.search_tsv, tsq)
     lexical_stmt = (
         select(

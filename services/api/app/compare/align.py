@@ -8,8 +8,12 @@ from difflib import SequenceMatcher
 
 from app.db.models import ChangeCategory, Requirement
 
-_TOKEN = re.compile(r"[a-z0-9]+")
-_MODAL_DOWNGRADE = re.compile(r"\bshall\b|\bmust\b", re.IGNORECASE)
+# Unicode tokens so Hebrew requirement text can align.
+_TOKEN = re.compile(r"\w+", re.UNICODE)
+_MODAL_DOWNGRADE = re.compile(
+    r"\bshall\b|\bmust\b|חייב|חובה|נדרש",
+    re.IGNORECASE,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -182,8 +186,10 @@ def _criteria_text(requirement: Requirement) -> str:
 def _is_potential_breaking(old: str, new: str) -> bool:
     old_l = old.lower()
     new_l = new.lower()
-    if _MODAL_DOWNGRADE.search(old_l) and re.search(r"\b(should|may|optional)\b", new_l):
+    soft_en = re.search(r"\b(should|may|optional)\b", new_l)
+    soft_he = any(tok in new for tok in ("מומלץ", "יכול", "רשות"))
+    if _MODAL_DOWNGRADE.search(old) and (soft_en or soft_he):
         return True
-    if "must not" in new_l and "must not" not in old_l:
+    if ("must not" in new_l or "אסור" in new) and ("must not" not in old_l and "אסור" not in old):
         return True
-    return "breaking" in new_l
+    return "breaking" in new_l or "שובר תאימות" in new

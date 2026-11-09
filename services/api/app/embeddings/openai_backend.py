@@ -10,7 +10,7 @@ from app.core.config import Settings
 
 
 class OpenAIEmbedder:
-    """Calls OpenAI embeddings HTTP API without adding a heavyweight SDK dependency."""
+    """Calls OpenAI / Gemini OpenAI-compatible embeddings HTTP API (no SDK)."""
 
     def __init__(self, settings: Settings) -> None:
         if not settings.openai_api_key:
@@ -19,6 +19,10 @@ class OpenAIEmbedder:
         self._base_url = (settings.openai_base_url or "https://api.openai.com/v1").rstrip("/")
         self._model_name = settings.embedding_model
         self._dims = settings.embedding_dims
+        self._settings = settings
+
+    def _settings_send_dimensions(self) -> bool:
+        return bool(getattr(self._settings, "embedding_send_dimensions", False))
 
     @property
     def model_name(self) -> str:
@@ -31,11 +35,16 @@ class OpenAIEmbedder:
     def embed_texts(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        payload = {
+        payload: dict[str, object] = {
             "model": self._model_name,
             "input": texts,
-            "dimensions": self._dims,
         }
+        # OpenAI text-embedding-3* accepts dimensions; Gemini/compat often does not.
+        model_l = self._model_name.lower()
+        if "text-embedding-3" in model_l or model_l.startswith("text-embedding-ada"):
+            payload["dimensions"] = self._dims
+        elif self._settings_send_dimensions():
+            payload["dimensions"] = self._dims
         request = urllib.request.Request(
             f"{self._base_url}/embeddings",
             data=json.dumps(payload).encode("utf-8"),

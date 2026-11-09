@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -16,6 +17,7 @@ import {
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { humanizeAnswer } from "../lib/format";
+import { useLocale } from "../lib/i18n";
 import type { ChatDocSelection, ChatMessage } from "../lib/types";
 
 type Props = {
@@ -24,20 +26,20 @@ type Props = {
   availableDocs: ChatDocSelection[];
 };
 
-const SUGGESTIONS = [
-  "When was John born?",
-  "Summarize the key points in plain language",
-  "What changed in the latest version?",
-];
-
 export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
   const { apiKey } = useAuth();
+  const { t } = useLocale();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const suggestions = useMemo(
+    () => [t("chat.suggest1"), t("chat.suggest2"), t("chat.suggest3")],
+    [t],
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +62,7 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
   async function ask(text: string) {
     if (!apiKey || !text.trim()) return;
     if (!selectedDocs.length) {
-      setError("Pick at least one document below the composer before asking.");
+      setError(t("chat.pickDocs"));
       return;
     }
     setError(null);
@@ -82,23 +84,24 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
       const cid = await ensureConversation();
       const versionIds = selectedDocs.map((d) => d.versionId);
       const lower = userText.toLowerCase();
-      if (lower.includes("changed") || lower.includes("difference") || lower.includes("diff")) {
+      if (
+        lower.includes("changed") ||
+        lower.includes("difference") ||
+        lower.includes("diff") ||
+        userText.includes("השתנה") ||
+        userText.includes("שינוי")
+      ) {
         await maybeInjectCompareSummary(apiKey, selectedDocs, setMessages);
       }
-      const turn = await postMessage(apiKey, cid, userText, versionIds);
+      await postMessage(apiKey, cid, userText, versionIds);
       const detail = await getConversation(apiKey, cid);
       setMessages(
         detail.messages.map((m) =>
-          m.role === "assistant"
-            ? { ...m, content: humanizeAnswer(m.content) }
-            : m,
+          m.role === "assistant" ? { ...m, content: humanizeAnswer(m.content) } : m,
         ),
       );
-      if (turn.status === "insufficient_evidence") {
-        setError(null);
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ask failed");
+      setError(err instanceof Error ? err.message : t("chat.askFailed"));
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
     } finally {
       setBusy(false);
@@ -114,8 +117,8 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
     <section className="panel chat-panel">
       <div className="panel-head">
         <div>
-          <h2>Chat</h2>
-          <p>Answers stay in plain language, grounded in the documents you pick.</p>
+          <h2>{t("chat.title")}</h2>
+          <p>{t("chat.subtitle")}</p>
         </div>
         <button
           type="button"
@@ -126,16 +129,16 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
             setError(null);
           }}
         >
-          New chat
+          {t("chat.new")}
         </button>
       </div>
 
       <div className="chat-thread">
         {!messages.length && !busy ? (
           <div className="empty">
-            <p>Ask anything about your selected documents.</p>
+            <p>{t("chat.empty")}</p>
             <div className="suggest-row" style={{ justifyContent: "center", marginTop: "0.85rem" }}>
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((s) => (
                 <button key={s} type="button" className="suggest" onClick={() => ask(s)}>
                   {s}
                 </button>
@@ -145,15 +148,13 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
         ) : null}
 
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`bubble ${m.role === "user" ? "user" : "assistant"}`}
-          >
+          <div key={m.id} className={`bubble ${m.role === "user" ? "user" : "assistant"}`}>
             {m.role === "assistant" ? humanizeAnswer(m.content) : m.content}
             {m.role === "assistant" && m.citations?.length ? (
               <div className="cite-note">
-                Based on {m.citations.length} source quote
-                {m.citations.length === 1 ? "" : "s"} from your documents
+                {m.citations.length === 1
+                  ? t("chat.citeOne", { n: 1 })
+                  : t("chat.citeMany", { n: m.citations.length })}
               </div>
             ) : null}
           </div>
@@ -173,11 +174,11 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
         {error ? <div className="error">{error}</div> : null}
         <div className="doc-chips">
           <span className="muted" style={{ fontSize: "0.78rem" }}>
-            Searching:
+            {t("chat.searching")}
           </span>
           {availableDocs.length === 0 ? (
             <span className="muted" style={{ fontSize: "0.78rem" }}>
-              Upload a document to get started
+              {t("chat.needUpload")}
             </span>
           ) : (
             availableDocs.map((doc) => {
@@ -202,9 +203,7 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={
-              selectedDocs.length
-                ? "Message SpecLens…"
-                : "Select at least one document, then ask…"
+              selectedDocs.length ? t("chat.placeholder") : t("chat.placeholderNeedDoc")
             }
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -214,7 +213,7 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
             }}
           />
           <button className="btn" type="submit" disabled={busy || !question.trim()}>
-            Send
+            {t("chat.send")}
           </button>
         </div>
       </form>

@@ -1,14 +1,17 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-
-const links = [
-  { to: "/", label: "Home", end: true },
-  { to: "/documents", label: "Documents" },
-  { to: "/settings", label: "Settings" },
-];
+import { useLocale } from "../lib/i18n";
 
 export function AppShell() {
   const { signOut } = useAuth();
+  const { t, toggleLocale } = useLocale();
+
+  const links = [
+    { to: "/", label: t("nav.home"), end: true },
+    { to: "/documents", label: t("nav.documents") },
+    { to: "/settings", label: t("nav.settings") },
+  ];
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -27,9 +30,19 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <button type="button" className="btn secondary sm" onClick={signOut}>
-          Sign out
-        </button>
+        <div className="row">
+          <button
+            type="button"
+            className="lang-toggle"
+            onClick={toggleLocale}
+            title={t("lang.toggleTitle")}
+          >
+            {t("lang.toggle")}
+          </button>
+          <button type="button" className="btn secondary sm" onClick={signOut}>
+            {t("nav.signOut")}
+          </button>
+        </div>
       </header>
       <main className="main">
         <Outlet />

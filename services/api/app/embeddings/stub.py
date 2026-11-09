@@ -6,7 +6,8 @@ import hashlib
 import math
 import re
 
-_TOKEN_RE = re.compile(r"[a-z0-9]+", re.IGNORECASE)
+# Unicode word tokens so Hebrew/Arabic/CJK script chunks embed usefully in stub mode.
+_TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 
 class StubEmbedder:

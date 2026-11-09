@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.core.config import Settings, get_settings
 from app.extraction.base import RequirementExtractor
 from app.extraction.openai_backend import OpenAIRequirementExtractor
+from app.extraction.openai_compat import OpenAICompatRequirementExtractor
 from app.extraction.stub import StubRequirementExtractor
 
 
@@ -14,4 +15,6 @@ def get_extractor(settings: Settings | None = None) -> RequirementExtractor:
         return StubRequirementExtractor()
     if cfg.extraction_backend == "openai":
         return OpenAIRequirementExtractor(cfg)
+    if cfg.extraction_backend == "openai_compat":
+        return OpenAICompatRequirementExtractor(cfg)
     raise ValueError(f"Unsupported extraction backend: {cfg.extraction_backend}")
