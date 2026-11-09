@@ -24,7 +24,7 @@ SpecLens supports Google AI Studio via the OpenAI-compatible Chat Completions AP
 OPENAI_API_KEY=your-gemini-key-here
 OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 GENERATION_BACKEND=openai_compat
-GENERATION_MODEL=gemini-2.5-flash
+GENERATION_MODEL=gemini-3.8-flash
 # embeddings/extraction can stay stub for first demos
 EMBEDDING_BACKEND=stub
 EXTRACTION_BACKEND=stub

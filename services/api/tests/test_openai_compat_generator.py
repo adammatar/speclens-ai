@@ -41,7 +41,7 @@ def test_openai_compat_generate_parses_gemini_style_json() -> None:
         openai_api_key="test-gemini-key",
         openai_base_url="https://generativelanguage.googleapis.com/v1beta/openai",
         generation_backend="openai_compat",
-        generation_model="gemini-2.5-flash",
+        generation_model="gemini-3.8-flash",
     )
     payload = {
         "choices": [
@@ -92,7 +92,7 @@ def test_factory_selects_openai_compat() -> None:
         openai_api_key="k",
         openai_base_url="https://generativelanguage.googleapis.com/v1beta/openai",
         generation_backend="openai_compat",
-        generation_model="gemini-2.5-flash",
+        generation_model="gemini-3.8-flash",
     )
     gen = get_generator(settings)
     assert isinstance(gen, OpenAICompatGenerator)
