@@ -1,0 +1,41 @@
+[project]
+name = "speclens-ai"
+version = "0.1.0"
+description = "Evaluation-driven AI platform for technical specifications"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["services/api", "workers"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+packages = ["app", "speclens_worker"]
+mypy_path = "services/api:workers"
+exclude = ["migrations/", "packages/", "apps/", "evals/"]
+
+[[tool.mypy.overrides]]
+module = ["celery.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["services/api/tests", "workers/tests"]
+pythonpath = ["services/api", "workers"]
+addopts = "-q --import-mode=importlib"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["services/api/app", "workers/speclens_worker"]
+omit = ["*/migrations/*"]
