@@ -1,102 +1,67 @@
 # SpecLens AI - Progress
 
-## Phase 0 - Discovery and architecture
+## Phase 0-3
 
-**Status:** Complete (approved)
-
----
-
-## Phase 1 - Engineering foundation
-
-**Status:** Complete (approved) - https://github.com/adammatar/speclens-ai/pull/1
+**Status:** Complete (approved) - PRs #1-#3
 
 ---
 
-## Phase 2 - Document ingestion
+## Phase 4 - Cited question answering
 
-**Status:** Complete (approved) - https://github.com/adammatar/speclens-ai/pull/2
+**Status:** Complete on branch (awaiting review / merge; stop before Phase 5)
 
----
+**Date:** 2026-11-09
 
-## Phase 3 - Search and retrieval
-
-**Status:** Complete and re-verified; CI green. Awaiting merge / explicit approval before Phase 4.
-
-**Date:** 2026-11-08 (re-verified same day)
-
-**PR:** https://github.com/adammatar/speclens-ai/pull/3  
-**Branch:** `cursor/phase3-search-retrieval-018c` @ `1e33bf8`
+**Branch:** `cursor/phase4-cited-qa-018c`
 
 ### Architecture and implementation decisions
 
-1. Stub embedder default (256-d); optional OpenAI backend when keyed.
-2. Migration `20261108_0003`: FTS `search_tsv` + GIN; `chunk_embeddings` + HNSW.
-3. Celery embed chained after successful ingest.
-4. Hybrid search: vector + lexical -> RRF; workspace fail-closed.
-5. `POST /api/v1/search` and `/search/debug` with provenance fields.
-6. No LangChain; rerank flag off.
+1. Conversations/messages/citations schema (`20261108_0004`).
+2. Prompt `prompts/answering/v1.md`; documents are untrusted data.
+3. Context from hybrid search with token budget; stub generator default; optional OpenAI Responses API.
+4. Citation allow-list enforcement; insufficient-evidence when retrieval is weak.
+5. APIs: create/get conversation; post message (JSON or SSE); status fields for UI.
+6. No LangChain; logs omit raw document bodies.
 
-### Acceptance criteria (re-verified)
+### Acceptance criteria
 
-| Criterion | Met? | Evidence |
-| --- | --- | --- |
-| Workspace-scoped hybrid search | Yes | Compose search hit with provenance |
-| No cross-workspace leakage | Yes | unknown WS HTTP 400 |
-| Provenance on hits | Yes | ids, heading_path, excerpt, offsets |
-| Retrieval without generation | Yes | stub + FTS/RRF |
-| Embed after ingest | Yes | embeddings count > 0 |
-| Tests / CI | Yes | pytest 19 passed; PR CI 2/2 green |
+| Criterion | Met? |
+| --- | --- |
+| Citations subset of retrieved chunks | Yes |
+| Insufficient-evidence path | Yes |
+| Retrieval/generation status exposed | Yes |
+| Injection phrases not obeyed (stub) | Yes |
+| pytest / compose smoke | Yes (23 passed) |
 
-### Commands / results (re-run)
+### Commands / results
 
 ```text
+pytest -> 23 passed
 ruff + mypy -> pass
-pytest -v   -> 19 passed
-alembic     -> 20261108_0003
-compose     -> upload/embed/search/debug ok; unknown WS 400
+alembic -> 20261108_0004
+compose QA smoke -> completed with allow-listed citations
 ```
 
 **Failures:** none.
 
-### Changed files
-
-28 files vs Phase 2 (embeddings, retrieval, search routes, migration, tests, CI, contracts, docs).
-
-### Remaining risks
-
-Stub vs production embed quality; fixed 256-d schema; English FTS only; rerank not implemented.
-
 ### Explicit stop
 
-**Phase 4 not started.** Wait for approval before cited QA.
+Phase 5 (requirement extraction) not started - awaiting approval.
+
+### Risks
+
+Stub QA quality; SSE is chunked post-generation; fresh retrieval each turn.
 
 ---
 
-## Phase 4 plan (proposed) - Cited question answering
+## Phase 5 plan (proposed) - Structured requirement intelligence
 
 Do not execute until approved.
 
-### Goals
+- Requirement schema + migration (technical plan Pydantic models)
+- Section extraction job with Structured Outputs / stub
+- Review states; preserve original model output
+- List/filter/edit/export APIs with provenance
+- Resumable jobs; synthetic fixtures only
 
-Streaming citation-grounded QA over hybrid retrieval, with conversations, insufficient-evidence behavior, and prompt-injection defenses. Documents are untrusted data.
-
-### Tasks
-
-1. Conversations/messages/citations schema + migration
-2. Versioned answering prompts under `prompts/answering/`
-3. Context assembly from Phase 3 search with token budget
-4. Streaming Responses API endpoint; citations allow-listed to retrieved chunk ids; stub LLM for tests
-5. Insufficient-evidence path; follow-up turns
-6. Persist model/prompt_version/chunk ids/latency/tokens; no raw doc bodies in logs
-7. Prompt-injection + citation allow-list tests; OpenAPI/CI updates
-
-### Exit criteria
-
-- Citations only to retrieved chunks
-- Explicit insufficient-evidence when unsupported
-- Retrieval/generation status exposed via API
-- CI green; no committed secrets
-
-### Non-goals
-
-Extraction, version compare, eval CI gates, real auth, Electron.
+Non-goals: version compare, eval CI gates, real auth.

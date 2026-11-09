@@ -3,6 +3,9 @@ export const openApiTitle = "SpecLens AI API" as const;
 export const openApiVersion = "0.1.0" as const;
 
 export type ApiPath =
+  | "/api/v1/conversations"
+  | "/api/v1/conversations/{conversation_id}"
+  | "/api/v1/conversations/{conversation_id}/messages"
   | "/api/v1/documents/jobs/{job_id}"
   | "/api/v1/documents/upload"
   | "/api/v1/documents/versions/{document_version_id}/chunks"
@@ -23,6 +26,9 @@ export interface ReadyResponse {
 }
 
 export const knownPaths: readonly ApiPath[] = [
+  "/api/v1/conversations",
+  "/api/v1/conversations/{conversation_id}",
+  "/api/v1/conversations/{conversation_id}/messages",
   "/api/v1/documents/jobs/{job_id}",
   "/api/v1/documents/upload",
   "/api/v1/documents/versions/{document_version_id}/chunks",
