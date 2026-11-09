@@ -14,7 +14,7 @@
 
 **Branch:** `cursor/phase9-production-ux-018c`
 
-**PR:** (opened against Phase 8)
+**PR:** https://github.com/adammatar/speclens-ai/pull/9
 
 ### Architecture and implementation decisions
 
