@@ -45,8 +45,12 @@ compose.override.yaml
 # Eval reports (generated)
 evals/reports/*
 !evals/reports/.gitkeep
+artifacts/
 
 # Secrets
 *.pem
 *.key
 .secrets/
+
+# Playwright transient recordings
+docs/portfolio/media/page@*.webm

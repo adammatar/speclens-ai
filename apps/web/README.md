@@ -1,5 +1,25 @@
-# SpecLens Web (placeholder)
+# SpecLens Web (React + Vite)
 
-Nuxt web UI lands in a later phase. This directory reserves the monorepo path from the architecture proposal.
+Browser UI for the SpecLens FastAPI API.
 
-Prototype UX reference (not copied into this repo): Local Docs Viewer on the author machine.
+## Local development
+
+```bash
+# API stack running on :8000 (make up)
+cd apps/web
+npm install
+npm run dev   # http://127.0.0.1:5173 (proxies /api → :8000)
+```
+
+Sign in with the local bootstrap API key (`speclens-local-dev-key`). The key is stored in `sessionStorage` only — it is never embedded in the production bundle.
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Production image
+
+Built by `infra/compose.prod.yaml` (nginx serving `dist/` and proxying `/api` to the API service).

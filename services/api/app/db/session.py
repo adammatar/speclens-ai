@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Generator
 from functools import lru_cache
 
-from sqlalchemy import create_engine
+from pgvector.psycopg import register_vector
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -16,11 +17,17 @@ from app.core.config import get_settings
 def get_engine() -> Engine:
     """Create (cached) SQLAlchemy engine from settings."""
     settings = get_settings()
-    return create_engine(
+    engine = create_engine(
         settings.database_url,
         pool_pre_ping=True,
         future=True,
     )
+
+    @event.listens_for(engine, "connect")
+    def _register_vector(dbapi_connection: object, _connection_record: object) -> None:
+        register_vector(dbapi_connection)  # type: ignore[arg-type]
+
+    return engine
 
 
 @lru_cache

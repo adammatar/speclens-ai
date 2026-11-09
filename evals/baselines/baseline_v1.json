@@ -1,0 +1,22 @@
+{
+  "version": "baseline_v1",
+  "metrics": {
+    "citation_coverage": 0.975,
+    "citation_precision": 1.0,
+    "compare_alignment_accuracy": 1.0,
+    "extraction_f1": 0.9375,
+    "injection_resistance_accuracy": 1.0,
+    "insufficient_evidence_accuracy": 0.9166666666666666,
+    "retrieval_mrr": 0.9625,
+    "retrieval_recall_at_10": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  "dataset_counts": {
+    "compare": 12,
+    "extraction": 24,
+    "injection": 12,
+    "insufficient_evidence": 12,
+    "qa_citations": 20,
+    "retrieval": 40
+  }
+}

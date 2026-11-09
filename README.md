@@ -1,83 +1,80 @@
 # SpecLens AI
 
-Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
+Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality offline before trusting model changes.
 
-Phase 1 delivers the engineering foundation only (API, worker, Postgres/pgvector, Redis, tooling, CI). No document AI features yet.
+**Portfolio pack:** [`docs/portfolio/`](docs/portfolio/) — architecture diagram, write-up, screenshots, demo video.
 
 ## Stack
 
-- **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
-- **Worker:** Celery + Redis (persistent queue) with a no-op job
-- **Data:** Postgres 16 + pgvector; local filesystem storage interface stub
-- **Web:** `apps/web` placeholder (Nuxt in a later phase)
-- **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
-- **Tooling:** Ruff, mypy, pytest, pre-commit, Make, GitHub Actions
+- **API:** FastAPI, SQLAlchemy 2, Alembic, structured JSON logging
+- **Auth:** hashed API keys, workspace RBAC (owner/editor/viewer), rate limits, audit trail
+- **Workers:** Celery + Redis (ingest, embed, extract, compare)
+- **Retrieval:** stub/OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF
+- **QA / extract / compare:** cited conversations, structured requirements, version diffs
+- **Eval:** offline JSONL harness + advisory CI gates (`make eval`)
+- **Web:** React + Vite SPA (`apps/web`) — API key in `sessionStorage` only
+- **Data:** Postgres 16 + pgvector; local filesystem object storage
 
-Python **>= 3.12**. Node.js **>= 22** (contracts package).
+Python **>= 3.12**. Node.js **>= 22**.
 
-## Quick start (Docker Compose)
+## Architecture
+
+![SpecLens architecture](docs/portfolio/architecture.svg)
+
+Browser SPA → FastAPI → Postgres / Redis / object storage, with Celery workers on the same data plane. Details: [`docs/architecture.md`](docs/architecture.md), ADR [`docs/decisions/0001-target-architecture.md`](docs/decisions/0001-target-architecture.md).
+
+## Quick start
 
 ```bash
 cp .env.example .env
-make up          # builds and starts postgres, redis, api, worker
-make smoke       # health + ready checks
+make up          # postgres, redis, api, worker
+make smoke       # health + ready
+make web         # React UI → http://127.0.0.1:5173
 ```
 
-API docs (local): http://127.0.0.1:8000/docs
+Sign in with a workspace API key. Local/CI bootstrap key is documented in `.env.example` only — **rotate before any shared or hosted deploy**. Never commit real secrets.
 
-- `GET /api/v1/health` - liveness
-- `GET /api/v1/ready` - readiness (fails closed until Postgres is reachable)
+Production-style stack (web on `:8080`): `make up-prod`. Ops: [`docs/deploy.md`](docs/deploy.md). Demo wipe + re-seed: `make demo-reset`.
 
-Migrations run automatically on API container start (`alembic upgrade head`). To run manually:
+API docs (local): http://127.0.0.1:8000/docs — authenticated routes need `Authorization: Bearer <key>`; `/health`, `/ready`, `/meta` stay public.
 
-```bash
-make migrate
-```
+## Screenshots
 
-## Local Python development
+| | |
+| --- | --- |
+| ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Dashboard](docs/portfolio/screenshots/02-dashboard.webp) |
+| ![Documents](docs/portfolio/screenshots/03-documents.webp) | |
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-make install-dev
-make lint
-make typecheck
-make test
-```
-
-Regenerate OpenAPI + TypeScript stubs:
-
-```bash
-make contracts
-```
+More media: [`docs/portfolio/`](docs/portfolio/).
 
 ## Make targets
 
 | Target | Purpose |
 | --- | --- |
-| `make up` | Start Compose stack |
-| `make down` | Stop stack and remove volumes |
-| `make migrate` | Alembic upgrade via Compose |
-| `make test` | pytest |
-| `make lint` | Ruff check + format check |
-| `make typecheck` | mypy |
-| `make contracts` | Export OpenAPI and generate TS stubs |
-| `make smoke` | Compose up + health/ready curl checks |
+| `make up` / `make up-prod` | Dev or prod-style Compose |
+| `make smoke` | Health/ready checks |
+| `make test` / `make lint` / `make typecheck` | Python quality |
+| `make eval` | Offline eval harness |
+| `make web` / `make web-build` | React app |
+| `make demo-reset` | Reset default workspace + synthetic seed |
+| `make contracts` | OpenAPI → TypeScript stubs |
 
-## Repository layout
+## Evaluation & security
 
-See `docs/architecture.md`. ADR: `docs/decisions/0001-target-architecture.md`.
+- Offline graders and thresholds: [`docs/evaluation.md`](docs/evaluation.md)
+- Portfolio metrics summary: [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md)
+- Trust boundaries and checklist: [`docs/security.md`](docs/security.md)
+
+**No confidential customer documents** are published. Demo corpus is synthetic fixtures under `services/api/tests/fixtures/` and generated eval JSONL.
+
+## Individual contribution
+
+Greenfield phased build (foundation → ingest → retrieval → cited QA → extraction → compare → eval → security → React UX/deploy → portfolio packaging), with stop-for-approval between phases and CI on each stacked PR.
 
 ## Prototype note
 
-Local Docs Viewer (private offline DOCX viewer) is a UX/parsing reference only. Its source is **not** copied into this repository.
-
-## Security
-
-- Never commit secrets; use `.env.example` placeholders only.
-- Uploaded documents are untrusted data (see `docs/security.md`).
-- No LangChain dependency.
+Local Docs Viewer (private offline DOCX viewer) is a UX/parsing reference only — its source is **not** copied into this repository. No LangChain dependency.
 
 ## License
 
-Proprietary - private repository.
+Proprietary — private repository.

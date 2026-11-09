@@ -7,7 +7,7 @@ Adapts the technical plan monorepo. Existing Local Docs Viewer justifies UX and 
 ```
 speclens-ai/                          # GitHub repository
 ├── apps/
-│   └── web/                          # Nuxt web UI (placeholder in Phase 1)
+│   └── web/                          # React + Vite SPA (Phase 9)
 ├── services/
 │   └── api/                          # FastAPI (SQLAlchemy 2, Alembic, Pydantic settings)
 ├── workers/                          # Redis-backed Celery workers
@@ -32,7 +32,7 @@ speclens-ai/                          # GitHub repository
 ## Runtime diagram
 
 ```
-Nuxt web (and optional future Electron shell)
+React + Vite web (and optional future Electron shell)
           |
           v
      FastAPI API  ---- OpenAI Responses + Embeddings

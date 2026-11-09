@@ -1,0 +1,12 @@
+{"gold_insufficient_evidence": true, "id": "ie-000", "predicted_insufficient_evidence": true, "question": "Unsupported question 0?"}
+{"gold_insufficient_evidence": true, "id": "ie-001", "predicted_insufficient_evidence": false, "question": "Unsupported question 1?"}
+{"gold_insufficient_evidence": false, "id": "ie-002", "predicted_insufficient_evidence": false, "question": "Unsupported question 2?"}
+{"gold_insufficient_evidence": true, "id": "ie-003", "predicted_insufficient_evidence": true, "question": "Unsupported question 3?"}
+{"gold_insufficient_evidence": false, "id": "ie-004", "predicted_insufficient_evidence": false, "question": "Unsupported question 4?"}
+{"gold_insufficient_evidence": false, "id": "ie-005", "predicted_insufficient_evidence": false, "question": "Unsupported question 5?"}
+{"gold_insufficient_evidence": true, "id": "ie-006", "predicted_insufficient_evidence": true, "question": "Unsupported question 6?"}
+{"gold_insufficient_evidence": false, "id": "ie-007", "predicted_insufficient_evidence": false, "question": "Unsupported question 7?"}
+{"gold_insufficient_evidence": false, "id": "ie-008", "predicted_insufficient_evidence": false, "question": "Unsupported question 8?"}
+{"gold_insufficient_evidence": true, "id": "ie-009", "predicted_insufficient_evidence": true, "question": "Unsupported question 9?"}
+{"gold_insufficient_evidence": false, "id": "ie-010", "predicted_insufficient_evidence": false, "question": "Unsupported question 10?"}
+{"gold_insufficient_evidence": false, "id": "ie-011", "predicted_insufficient_evidence": false, "question": "Unsupported question 11?"}

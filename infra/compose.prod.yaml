@@ -1,0 +1,97 @@
+# Production-style SpecLens stack (API + worker + web + data plane).
+# Postgres/Redis are not published to the host. Web terminates HTTP and proxies /api.
+name: speclens-prod
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-speclens}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-speclens_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-speclens}
+    volumes:
+      - speclens_pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-speclens} -d ${POSTGRES_DB:-speclens}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: services/api/Dockerfile
+    env_file:
+      - ../.env.example
+    environment:
+      DATABASE_URL: postgresql+psycopg://speclens:${POSTGRES_PASSWORD:-speclens_dev_password}@postgres:5432/speclens
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      STORAGE_LOCAL_ROOT: /data/storage
+      SPECLENS_ENV: ${SPECLENS_ENV:-production}
+      SPECLENS_DEPLOYMENT_MODE: hosted
+      AUTH_REQUIRED: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    volumes:
+      - speclens_storage_prod:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  worker:
+    build:
+      context: ..
+      dockerfile: workers/Dockerfile
+    env_file:
+      - ../.env.example
+    environment:
+      DATABASE_URL: postgresql+psycopg://speclens:${POSTGRES_PASSWORD:-speclens_dev_password}@postgres:5432/speclens
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      STORAGE_LOCAL_ROOT: /data/storage
+      SPECLENS_ENV: ${SPECLENS_ENV:-production}
+    volumes:
+      - speclens_storage_prod:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  speclens_pgdata_prod:
+  speclens_storage_prod:

@@ -1,107 +1,128 @@
 # SpecLens AI - Progress
 
-## Phase 0 - Discovery and architecture
+## Phase 0-9
 
-**Status:** Complete (approved)
-
-**Date:** 2026-11-08
-
-See `docs/decisions/0001-target-architecture.md`, `docs/architecture.md`, and `docs/security.md`.
+**Status:** Complete (approved) - PRs #1-#9
 
 ---
 
-## Phase 1 - Engineering foundation
+## Phase 10 - Portfolio packaging
 
-**Status:** Complete and verified (CI green). Awaiting merge / explicit approval before Phase 2.
+**Status:** Complete and re-verified (awaiting review / merge)
 
-**Date:** 2026-11-08 (re-verified same day)
+**Date:** 2026-11-09
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/1  
-**Branch:** `cursor/phase1-engineering-foundation-018c` @ `81fa337`
+**Branch:** `cursor/phase10-portfolio-packaging-018c`
+
+**PR:** https://github.com/adammatar/speclens-ai/pull/10
 
 ### Architecture and implementation decisions
 
-1. **Greenfield monorepo** (ADR 0001). Local Docs Viewer is UX/parsing reference only; no source copied.
-2. **FastAPI** under `services/api`: Pydantic Settings, structured JSON logging, `/api/v1/health` (liveness) and `/api/v1/ready` (DB readiness, 503 until reachable).
-3. **Postgres 16 + pgvector** in Compose; SQLAlchemy 2; Alembic creates `vector` extension and `health_probes`.
-4. **Celery + Redis** persistent queue; `speclens.noop` proves dequeue/ack.
-5. **Filesystem `StorageInterface` stub** with path-traversal guard (object store later).
-6. **OpenAPI -> TypeScript contracts stub** in `packages/contracts`.
-7. **Ruff, mypy, pytest, pre-commit**, Makefile, GitHub Actions (lint/typecheck/pytest + compose smoke).
-8. **No LangChain**; no document AI features yet; ASCII hyphens in prose.
+1. **Portfolio pack** at `docs/portfolio/`: architecture SVG, technical write-up (eval table, performance notes, security summary, contribution, case study), screenshots, demo video.
+2. **Deterministic media capture** with Playwright (`scripts/capture_portfolio_media.mjs`), Chromium password-manager features disabled — no flaky GUI click agents, no Chrome “Save password?” overlays.
+3. **Sign-in** API key field is `type="text"` so browsers do not treat it as a password credential.
+4. **README** embeds architecture + screenshots and links deploy/eval/security/portfolio docs.
+5. Synthetic demo corpus only (`sample.md` / eval JSONL); bootstrap secrets stay out of the web bundle.
 
-### Acceptance criteria (re-verified)
+### Acceptance criteria (technical-plan exit criteria)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| Compose starts API, worker, Postgres (pgvector), Redis | Yes | Four services up; healthchecks green |
-| `GET /api/v1/health` returns ok | Yes | `{"status":"ok"}` |
-| `GET /api/v1/ready` fails closed until DB up, then ok | Yes | Unit 503 mock; live ready ok |
-| Alembic upgrade on empty DB | Yes | `20261108_0001`; `health_probes` + `vector` |
-| CI green; no committed secrets | Yes | PR 2/2 pass; empty `OPENAI_API_KEY` |
-| pytest health-route smoke | Yes | 6 passed |
-| No LangChain; no document AI | Yes | Non-goal only; no dependency |
-| ASCII hyphens | Yes | Em-dashes normalized |
+| Architecture diagram | Yes | `docs/portfolio/architecture.svg` (+ README) |
+| Product screenshots | Yes | `docs/portfolio/screenshots/01–08.webp` (dashboard verified clean of password UI) |
+| ~2 min demo video | Yes | `docs/portfolio/media/demo-walkthrough.webm` (prior videoReview: no password modal) |
+| Public technical write-up | Yes | `docs/portfolio/write-up.md` |
+| Evaluation results | Yes | write-up metrics table; `make eval` gates passed on re-verify |
+| Performance notes | Yes | write-up “Performance notes” |
+| Security summary | Yes | write-up + `docs/security.md` |
+| Individual contribution | Yes | write-up + README |
+| README setup + architecture | Yes | root `README.md` |
+| Portfolio case study | Yes | write-up case-study + résumé line |
+| No confidential samples | Yes | fixtures only; `NO_KEY_IN_DIST` on web build |
 
-### Commands and test results (re-run)
+### Changed files (vs Phase 9)
 
 ```text
-ruff check / format --check     -> pass
-mypy                            -> Success (17 files)
-pytest -v                       -> 6 passed
-compose up --build              -> api/worker/postgres/redis up
-curl /api/v1/health|/ready      -> ok
-alembic current                 -> 20261108_0001 (head)
-Celery noop                     -> ok
-gh pr checks                    -> both jobs pass
+.gitignore
+Makefile
+README.md
+apps/web/package-lock.json
+apps/web/package.json
+apps/web/src/pages/SignInPage.tsx
+docs/portfolio/README.md
+docs/portfolio/architecture.svg
+docs/portfolio/media/demo-walkthrough.webm
+docs/portfolio/screenshots/01-signin.webp
+docs/portfolio/screenshots/02-dashboard.webp
+docs/portfolio/screenshots/03-documents.webp
+docs/portfolio/screenshots/04-document-detail.webp
+docs/portfolio/screenshots/05-chat.webp
+docs/portfolio/screenshots/06-requirements.webp
+docs/portfolio/screenshots/07-compare.webp
+docs/portfolio/screenshots/08-settings.webp
+docs/portfolio/write-up.md
+docs/progress.md
+scripts/capture_portfolio_media.mjs
 ```
 
-**Failures:** none.
+### Commands / results (re-verification 2026-11-09)
 
-### Changed files (63 vs `main`)
+```text
+ruff check / format --check               -> pass (114 files)
+mypy                                      -> Success (72 source files)
+pytest                                    -> 50 passed, 1 warning
+apps/web npm run build                    -> pass; no bootstrap key in dist/
+python -m evals.harness                   -> all gates passed
+GitHub CI (PR #10)                        -> lint/pytest, eval, compose smoke SUCCESS
+Asset inventory                           -> 8 screenshots + demo webm + architecture.svg present
+```
 
-See PR diff. Major paths: `services/api/**`, `workers/**`, `infra/compose.yaml`, `packages/contracts/**`, `docs/**`, `.github/workflows/ci.yml`, `Makefile`, `.env.example`, `README.md`.
-
-### Remaining risks
-
-- Published Postgres/Redis ports are for local DX only.
-- Some agent VMs need `bridge-nf-call-iptables=0` for Compose bridge traffic.
-- Contracts generator is a stub until schema growth.
-- Shared ingestion packaging across API/worker still TBD for Phase 2.
+**Failures:** none on re-verify.
 
 ### Explicit stop
 
-**Phase 2 not started.** Wait for explicit approval before ingestion work.
+The Phase 0–10 technical plan is complete. **No next product phase is started.** Optional follow-up work below awaits explicit approval.
+
+### Remaining risks
+
+1. Demo video is WebM; some hosts prefer MP4 (convert externally if needed).
+2. Eval numbers are stub-backend / synthetic — useful for regression, not live-LLM marketing claims.
+3. Playwright is a web `devDependency` for regenerating media only.
+4. Operator UX pages remain thin (UUID fields in places) if this product is taken beyond portfolio scope.
 
 ---
 
-## Phase 2 plan (proposed) - Document ingestion
+## Optional follow-up plan (proposed) - Post-plan hardening
 
-Do not execute until approved.
+**Do not execute until explicitly approved.** The original technical plan ends at Phase 10.
 
-### Goals
+### Goal
 
-Upload and process DOCX, text-based PDF, and Markdown asynchronously; every chunk keeps full provenance.
+Optional hardening and polish beyond the portfolio handoff — only if you want to continue the product.
 
-### Tasks
+### Scope candidates (pick explicitly if approved)
 
-1. Schema: documents, document_versions, chunks, job status; Alembic migration.
-2. Upload API: validation, SHA-256 dedupe, storage write, enqueue ingest job.
-3. Parsers for DOCX / text PDF / Markdown with section paths and offsets; reject encrypted/scanned-only PDFs.
-4. Hierarchical chunking (600-900 tokens, 80-120 overlap; heading path on every chunk).
-5. Celery ingest jobs with progress, failure, retry.
-6. Delete and reprocess workflows (remove bytes + chunks).
-7. Tests with synthetic fixtures only (no confidential customer docs).
-8. Refresh OpenAPI/contracts and CI.
+1. Redis-backed rate limits; rotate/disable bootstrap API key path for hosted demos.
+2. Richer React pickers (document/version selectors) for chat/compare/requirements.
+3. Wire optional Sentry SDK from `SENTRY_DSN`.
+4. Convert demo WebM → MP4 and add a short public case-study page if publishing outside GitHub.
+5. Live OpenAI backend smoke profile (non-CI) with cost/latency measurement.
 
-### Exit criteria
+### Non-goals unless requested
 
-- Large document processes without blocking the API
-- Every chunk traces to source
-- Duplicate uploads detected
-- Failed jobs retryable
-- Delete removes derived rows (embeddings arrive in Phase 3)
+- Enterprise SSO/SCIM
+- Electron packaging
+- New AI feature verticals
 
-### Non-goals for Phase 2
+### Exit criteria (if executed)
 
-- Embeddings/search, cited QA, requirement extraction, real auth, Electron, copying Local Docs Viewer source
+| Criterion | Proof |
+| --- | --- |
+| Chosen items implemented | Tests + docs update |
+| Portfolio media still clean | Re-run `capture_portfolio_media.mjs` |
+| No confidential samples | Corpus check |
+
+### Implementation sketch
+
+1. Branch `cursor/postplan-<focus>-018c` from Phase 10.
+2. Implement only the approved subset; PR; stop.

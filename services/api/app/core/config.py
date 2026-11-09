@@ -33,13 +33,47 @@ class Settings(BaseSettings):
 
     storage_backend: Literal["filesystem"] = "filesystem"
     storage_local_root: str = "./data/storage"
+    max_upload_bytes: int = 50 * 1024 * 1024
 
     openai_api_key: str | None = None
     openai_base_url: str | None = None
 
+    embedding_backend: Literal["stub", "openai"] = "stub"
+    embedding_model: str = "speclens-stub-v1"
+    embedding_dims: int = 256
+    embedding_batch_size: int = 64
+    search_vector_limit: int = 30
+    search_lexical_limit: int = 30
+    search_rrf_k: int = 60
+    search_result_limit: int = 12
+    search_rerank_enabled: bool = False
+
+    generation_backend: Literal["stub", "openai"] = "stub"
+    generation_model: str = "speclens-stub-qa-v1"
+    answering_prompt_version: str = "answering-v1"
+    qa_context_token_budget: int = 1800
+    qa_min_rrf_score: float = 0.01
+    qa_max_context_chunks: int = 8
+
+    extraction_backend: Literal["stub", "openai"] = "stub"
+    extraction_model: str = "speclens-stub-extract-v1"
+    extraction_prompt_version: str = "extraction-v1"
+
+    auth_required: bool = True
+    rate_limit_per_minute: int = 120
+    retention_days: int = 365
+    # Comma-separated browser origins for the React SPA (local Vite + prod web).
+    cors_origins: str = (
+        "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:3000,http://localhost:3000"
+    )
+
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [part.strip() for part in self.cors_origins.split(",") if part.strip()]
 
 
 @lru_cache

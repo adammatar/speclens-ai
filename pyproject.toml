@@ -9,13 +9,15 @@ license = { text = "Proprietary" }
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["services/api", "workers"]
+src = ["services/api", "workers", "evals"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/migrations/**" = ["E501"]
+"**/api/routes/**" = ["B008"]
+"**/security/auth.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -27,12 +29,12 @@ mypy_path = "services/api:workers"
 exclude = ["migrations/", "packages/", "apps/", "evals/"]
 
 [[tool.mypy.overrides]]
-module = ["celery.*"]
+module = ["celery.*", "docx.*", "pypdf.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-testpaths = ["services/api/tests", "workers/tests"]
-pythonpath = ["services/api", "workers"]
+testpaths = ["services/api/tests", "workers/tests", "evals/tests"]
+pythonpath = ["services/api", "workers", "."]
 addopts = "-q --import-mode=importlib"
 filterwarnings = ["ignore::DeprecationWarning"]
 
