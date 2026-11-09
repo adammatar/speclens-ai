@@ -29,7 +29,7 @@ const en: Dict = {
   "signin.continue": "Continue",
   "signin.checking": "Checking…",
   "signin.hint":
-    "This is your SpecLens workspace key (local default: speclens-local-dev-key). It is not your Gemini/OpenAI key — that stays in the server .env. Stored in this browser session only.",
+    "SpecLens AI is built as a workspace API product, not a consumer accounts system. If you want to run it on your localhost, the default key is: speclens-local-dev-key",
   "signin.failed": "Sign-in failed",
 
   "home.title": "Workspace",
@@ -61,7 +61,7 @@ const en: Dict = {
   "chat.searching": "Searching:",
   "chat.needUpload": "Upload a document to get started",
   "chat.pickDocs": "Pick at least one document below the composer before asking.",
-  "chat.placeholder": "Message SpecLens…",
+  "chat.placeholder": "Message SpecLens AI…",
   "chat.placeholderNeedDoc": "Select at least one document, then ask…",
   "chat.send": "Send",
   "chat.citeOne": "Based on {n} source quote from your documents",
@@ -122,7 +122,7 @@ const he: Dict = {
   "signin.continue": "המשך",
   "signin.checking": "בודק…",
   "signin.hint":
-    "זה מפתח הגישה של SpecLens למרחב העבודה (ברירת מחדל מקומית: speclens-local-dev-key). זה לא מפתח Gemini/OpenAI — הוא נשאר בקובץ .env בשרת. נשמר רק בסשן הדפדפן.",
+    "SpecLens AI נבנה כמוצר API למרחב עבודה, לא כמערכת חשבונות צרכנית. אם מריצים ב־localhost, מפתח ברירת המחדל הוא: speclens-local-dev-key",
   "signin.failed": "הכניסה נכשלה",
 
   "home.title": "מרחב עבודה",
@@ -154,7 +154,7 @@ const he: Dict = {
   "chat.searching": "מחפש ב:",
   "chat.needUpload": "העלו מסמך כדי להתחיל",
   "chat.pickDocs": "בחרו לפחות מסמך אחד מתחת לפני השאלה.",
-  "chat.placeholder": "כתבו ל־SpecLens…",
+  "chat.placeholder": "כתבו ל־SpecLens AI…",
   "chat.placeholderNeedDoc": "בחרו מסמך ואז שאלו…",
   "chat.send": "שליחה",
   "chat.citeOne": "מבוסס על ציטוט מקור אחד מהמסמכים שלכם",
