@@ -29,8 +29,8 @@ jobs:
 
       - name: Ruff
         run: |
-          ruff check services/api workers
-          ruff format --check services/api workers
+          ruff check services/api workers evals scripts
+          ruff format --check services/api workers evals scripts
 
       - name: Mypy
         run: mypy --config-file=pyproject.toml
@@ -45,6 +45,35 @@ jobs:
           npm install
           npm run generate
           git diff --exit-code -- openapi.json src/generated.ts
+
+  eval:
+    name: Evaluation harness
+    runs-on: ubuntu-latest
+    needs: lint-typecheck-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run make eval
+        # Advisory by default; set repository variable EVAL_ENFORCE=true to block on thresholds.
+        run: |
+          set -euo pipefail
+          if [ "${{ vars.EVAL_ENFORCE }}" = "true" ]; then
+            make eval EVAL_ENFORCE=1
+          else
+            make eval
+          fi
+        continue-on-error: ${{ vars.EVAL_ENFORCE != 'true' }}
+      - name: Upload eval artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: |
+            artifacts/eval/report.json
+            artifacts/eval/report.html
+          if-no-files-found: warn
 
   compose-smoke:
     name: Compose smoke

@@ -2,7 +2,7 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 6 adds version comparison and requirement traceability (align requirements across versions, classify changes, confirm/reject for eval).
+Phase 7 adds an offline evaluation harness (`make eval`) with JSONL datasets, graders, JSON/HTML reports, and advisory CI gates.
 
 ## Stack
 
@@ -13,6 +13,7 @@ Phase 6 adds version comparison and requirement traceability (align requirements
 - **QA:** conversations/messages/citations; stub or OpenAI Responses generator; citation allow-lists
 - **Extraction:** section jobs, Pydantic schema validation, review states, CSV/JSON export
 - **Compare:** requirement alignment, change categories, confirm/reject, Jira/test/file links
+- **Eval:** JSONL datasets, offline graders, baseline diff, advisory CI thresholds
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
 - **Web:** `apps/web` placeholder (Nuxt in a later phase)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
@@ -87,6 +88,7 @@ make contracts
 | `make typecheck` | mypy |
 | `make contracts` | Export OpenAPI and generate TS stubs |
 | `make smoke` | Compose up + health/ready curl checks |
+| `make eval` | Offline eval harness → `artifacts/eval/report.{json,html}` |
 
 ## Repository layout
 
