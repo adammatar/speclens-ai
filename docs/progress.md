@@ -1,139 +1,151 @@
 # SpecLens AI - Progress
 
-## Phase 0-5
+## Phase 0-6
 
-**Status:** Complete (approved) - PRs #1-#5
+**Status:** Complete (approved) - PRs #1-#6
 
 ---
 
-## Phase 6 - Version comparison and traceability
+## Phase 7 - Evaluation system
 
-**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 7)
+**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 8)
 
 **Date:** 2026-11-09
 
-**Branch:** `cursor/phase6-version-compare-018c`
+**Branch:** `cursor/phase7-evaluation-harness-018c`
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/6
+**PR:** https://github.com/adammatar/speclens-ai/pull/7
 
 ### Architecture and implementation decisions
 
-1. **New versions:** `POST /documents/{id}/versions` uploads a new `DocumentVersion` with incremented `version_number`.
-2. **Schema:** Alembic `20261108_0006` adds `comparison_jobs`, `requirement_changes`, and requirement traceability fields (Jira, source file, test case, implementation note).
-3. **Alignment:** Match by `external_id` first, then greedy token/sequence similarity (threshold 0.72) so minor wording is not reported as entirely new.
-4. **Categories:** added, removed, clarified, behavior_changed, priority_changed, acceptance_criteria_changed, potential_breaking_change, uncertain.
-5. **Source linkage:** Non add/remove changes always carry old and new source quotes (fallback to statements).
-6. **Review:** Confirm/reject via PATCH; confirmed rows set `is_eval_example` for Phase 7.
-7. **Celery:** `speclens.compare_document_versions`; stub-first; no LangChain.
+1. Offline harness under `evals/harness` (`python -m evals.harness` / `make eval`) - no live LLM spend in CI.
+2. Versioned JSONL suites: retrieval, QA citations, extraction, compare, insufficient-evidence, injection (synthetic fixtures).
+3. Graders: Recall@10, MRR, citation precision/coverage, unsupported-claim rate, extraction F1, compare alignment, IE accuracy, injection resistance.
+4. Reports: `artifacts/eval/report.json` + `.html`; copies under `evals/reports/latest.*` (gitignored).
+5. Baseline diff vs `evals/baselines/baseline_v1.json` for prompt/model change comparison.
+6. Thresholds in `evals/thresholds.json`; CI job advisory unless `EVAL_ENFORCE=true` / `--enforce`.
+7. Optional `scripts/export_eval_examples.py` imports Phase 5/6 `is_eval_example` rows.
 
 ### Acceptance criteria (technical-plan exit criteria)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| Minor wording not reported as entirely new | Yes | `test_minor_wording_change_aligns_not_added_removed` |
-| Every reported change links old and new source text | Yes | add/remove one-sided OK; others require both quotes (pipeline + smoke) |
-| Users can confirm or reject detected changes | Yes | PATCH + tests/smoke |
-| Confirmed decisions saved for future evaluations | Yes | `is_eval_example=True` on confirm |
+| `make eval` produces JSON and HTML | Yes | re-run wrote both artifacts; runner smoke test |
+| Prompt/model changes comparable to baseline | Yes | non-empty `baseline_diff` in report |
+| CI can block below thresholds | Yes | `--enforce` / `EVAL_ENFORCE`; advisory by default |
+| >=50 questions and >=20 extraction examples | Yes | 60 question-like; 24 extraction |
 
-### Changed files (vs Phase 5)
+### Changed files (vs Phase 6)
 
 ```text
 .github/workflows/ci.yml
+.gitignore
+Makefile
 README.md
+docs/evaluation.md
 docs/progress.md
-packages/contracts/openapi.json
-packages/contracts/src/generated.ts
-services/api/app/api/routes/comparisons.py
-services/api/app/api/routes/documents.py
-services/api/app/api/routes/requirements.py
-services/api/app/api/schemas.py
-services/api/app/compare/__init__.py
-services/api/app/compare/align.py
-services/api/app/compare/pipeline.py
-services/api/app/db/models.py
-services/api/app/extraction/service.py
-services/api/app/ingestion/__init__.py
-services/api/app/ingestion/queue.py
-services/api/app/ingestion/service.py
-services/api/app/main.py
-services/api/migrations/versions/20261108_0006_version_compare.py
-services/api/tests/test_compare_align.py
-services/api/tests/test_compare_pipeline.py
-workers/speclens_worker/tasks.py
+evals/__init__.py
+evals/baselines/baseline_v1.json
+evals/datasets/compare_v1.jsonl
+evals/datasets/extraction_v1.jsonl
+evals/datasets/injection_v1.jsonl
+evals/datasets/insufficient_evidence_v1.jsonl
+evals/datasets/qa_citations_v1.jsonl
+evals/datasets/retrieval_v1.jsonl
+evals/harness/__init__.py
+evals/harness/__main__.py
+evals/harness/graders.py
+evals/harness/metrics.py
+evals/harness/report.py
+evals/harness/runner.py
+evals/tests/test_metrics.py
+evals/tests/test_runner_smoke.py
+evals/thresholds.json
+pyproject.toml
+scripts/export_eval_examples.py
+scripts/generate_eval_datasets.py
 ```
 
 ### Commands / results (re-verification 2026-11-09)
 
 ```text
-ruff check app tests              -> pass (exit 0)
-mypy app                          -> pass, 62 files (exit 0)
-alembic current                   -> 20261108_0006 (head)
-python3 -m pytest -q              -> 34 passed, 0 failed (exit 0)
-Live compose re-smoke             -> compare succeeded; confirm marks eval
-                                     -> REVERIFY6_SMOKE_OK
-CI (aec7e71)                      -> FAILED: invalid workflow YAML (multiline python -c)
-CI (2acd908)                      -> FAILED: Ruff E501 on workers Celery decorator
-CI (621251b)                      -> SUCCESS: Lint/typecheck/pytest + Compose smoke
+ruff check services/api workers evals scripts     -> pass
+ruff format --check ...                           -> pass (104 files)
+python3 -m pytest -q                              -> 40 passed, 0 failed
+make eval                                         -> all gates passed; report.json + report.html
+python -m evals.harness --enforce                 -> exit 0 (gates pass)
+CI (PR #7): Lint/pytest SUCCESS; Evaluation harness SUCCESS; Compose smoke SUCCESS
+Dataset counts: retrieval 40 + qa 20 = 60 questions; extraction 24
 ```
 
-**Local test failures:** none.
-
-**CI note:** Workflow YAML fixed, then Ruff E501 on `speclens.compare_document_versions` decorator fixed via format wrap. Head CI green.
+**Failures:** none.
 
 ### Explicit stop
 
-Phase 7 (evaluation system) is **not started**. Awaiting explicit approval.
+Phase 8 (security, authentication, privacy) is **not started**. Awaiting explicit approval.
 
 ### Remaining risks
 
-1. Similarity thresholds may under/over-merge without embedding-based aligner.
-2. Clarified vs behavior_changed is heuristic without an LLM judge.
-3. Exact-duplicate statement pairs are suppressed from the change list (intentional).
-4. Compare requires successful extraction on both versions first.
-5. CI must go green after the workflow YAML fix (local verify already green).
+1. Synthetic gold/predictions can inflate offline metrics vs production traffic.
+2. Advisory CI gates need calibration before hard enforcement.
+3. Latency/cost are not yet first-class measured channels.
+4. Live-system prediction capture (API → predictions JSONL) is future work.
 
 ---
 
-## Phase 7 plan (proposed) - Evaluation system
+## Phase 8 plan (proposed) - Security, authentication and privacy
 
 **Do not execute until explicitly approved.**
 
 ### Goal
 
-Local, version-controlled evaluation harness (`make eval`) with JSONL datasets and JSON/HTML reports covering retrieval, citations, QA, extraction, compare, insufficient-evidence, and prompt-injection resistance. CI can gate on agreed thresholds (start advisory, then blocking).
+Workspace-aware authentication and authorization, hardened uploads/secrets/logging, audit history, and documented privacy/retention controls - without breaking local stub Compose workflows.
 
 ### Scope (in)
 
-1. **Datasets** under `evals/` (JSONL): retrieval, QA+citations, extraction, compare, insufficient-evidence, injection. Bootstrap with synthetic fixtures; target >=50 questions and >=20 extraction examples.
-2. **Graders:** Recall@k, MRR, citation precision/coverage, unsupported-claim rate, extraction F1, compare alignment accuracy, latency/token stubs.
-3. **Runner:** `make eval` writes `artifacts/eval/report.json` + HTML summary; baseline comparison for prompt/model changes.
-4. **Gold import (optional):** export accepted Phase 5/6 `is_eval_example` rows into eval samples.
-5. **CI:** eval job (advisory first if thresholds need calibration; then blocking).
-6. Constraints: ASCII hyphens; no LangChain; no confidential fixtures; stub/offline in CI.
+1. **Identity & workspaces**
+   - Users + API tokens (local-friendly); optional OIDC later.
+   - Roles: owner / editor / viewer on a workspace.
+2. **Authorization**
+   - Server-side workspace isolation on documents, conversations, requirements, comparisons, search.
+   - Fail closed for missing/invalid credentials on sensitive routes; keep `/health` public.
+3. **Hardening**
+   - Rate limits on upload/QA/extract/compare.
+   - Upload size/MIME allow-list audit; retention config; complete deletion already present - verify storage+chunks+embeddings gone under auth.
+4. **Privacy & secrets**
+   - No document bodies or API keys in logs; redaction helpers + tests.
+   - Secret management docs; `.env.example` only.
+5. **Audit**
+   - `audit_events` table for upload/delete/export/accept decisions.
+6. **Tests + CI**
+   - Cross-workspace denial tests; auth header compose smoke; prompt-injection suite already in evals - keep green.
+   - Update OpenAPI security schemes + contracts.
 
 ### Non-goals
 
-- Hosted tracing product UI
-- Real auth (Phase 8)
-- Paid OpenAI calls in CI
+- Full enterprise SSO/SCIM / customer-managed KMS
+- Public multi-tenant marketing site
+- Phase 9 production UX frontend
 
 ### Exit criteria to verify before stop
 
 | Criterion | How we will prove it |
 | --- | --- |
-| `make eval` produces JSON and HTML | Command + artifact paths |
-| Prompt/model changes comparable to baseline | Diff section in report |
-| CI can block below thresholds | Workflow step (advisory then enforce) |
-| >=50 questions and >=20 extraction examples | Dataset counts in report |
+| Cross-workspace access denied | Integration tests |
+| Deleted docs absent from storage/chunks/embeddings | Delete test under auth |
+| API keys never reach the frontend | Contracts/docs + no key in web bundle |
+| Logs hold IDs/metrics, not confidential content | Redaction unit tests |
+| Security checklist documented | `docs/security.md` update |
 
 ### Implementation sketch
 
-1. Branch `cursor/phase7-evaluation-harness-018c` from Phase 6.
-2. `evals/` datasets + eval package/tools; Makefile + CI.
-3. Update progress; open PR; **stop for Phase 8 approval**.
+1. Branch `cursor/phase8-security-auth-018c` from Phase 7.
+2. Migration `20261108_0008` (users, memberships, api_keys, audit_events).
+3. Auth dependency + workspace filters on routes; rate limit middleware.
+4. Tests + CI; progress; PR; **stop for Phase 9 approval**.
 
-### Risks for Phase 7
+### Risks for Phase 8
 
-- Synthetic gold labels may inflate metrics vs real specs.
-- Threshold calibration needs iteration before hard CI gates.
-- Latency/cost metrics are stubs without live model traffic in CI.
+- Local DX friction if auth is too strict without a clear stub token path.
+- Migrating existing default-workspace data needs a bootstrap owner.
+- Rate limits must not flake CI smoke.

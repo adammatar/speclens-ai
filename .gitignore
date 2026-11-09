@@ -45,6 +45,7 @@ compose.override.yaml
 # Eval reports (generated)
 evals/reports/*
 !evals/reports/.gitkeep
+artifacts/
 
 # Secrets
 *.pem
