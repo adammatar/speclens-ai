@@ -8,11 +8,13 @@
 
 ## Phase 6 - Version comparison and traceability
 
-**Status:** Complete on branch (awaiting review / merge; stop before Phase 7)
+**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 7)
 
 **Date:** 2026-11-09
 
 **Branch:** `cursor/phase6-version-compare-018c`
+
+**PR:** https://github.com/adammatar/speclens-ai/pull/6
 
 ### Architecture and implementation decisions
 
@@ -24,14 +26,14 @@
 6. **Review:** Confirm/reject via PATCH; confirmed rows set `is_eval_example` for Phase 7.
 7. **Celery:** `speclens.compare_document_versions`; stub-first; no LangChain.
 
-### Acceptance criteria
+### Acceptance criteria (technical-plan exit criteria)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
 | Minor wording not reported as entirely new | Yes | `test_minor_wording_change_aligns_not_added_removed` |
-| Every change links old/new source text (add/remove one-sided OK) | Yes | pipeline + live/CI asserts |
-| Users can confirm or reject changes | Yes | PATCH + tests/smoke |
-| Confirmed decisions saved for eval | Yes | `is_eval_example=True` on confirm |
+| Every reported change links old and new source text | Yes | add/remove one-sided OK; others require both quotes (pipeline + smoke) |
+| Users can confirm or reject detected changes | Yes | PATCH + tests/smoke |
+| Confirmed decisions saved for future evaluations | Yes | `is_eval_example=True` on confirm |
 
 ### Changed files (vs Phase 5)
 
@@ -60,23 +62,27 @@ services/api/tests/test_compare_pipeline.py
 workers/speclens_worker/tasks.py
 ```
 
-### Commands / results
+### Commands / results (re-verification 2026-11-09)
 
 ```text
-ruff check app tests  -> pass
-mypy app              -> pass (62 files)
-alembic upgrade head  -> 20261108_0006
-pytest                -> 34 passed, 0 failed
-Live smoke            -> compare succeeded; categories include clarified/behavior_changed/added;
-                         confirm marks eval; traceability patch OK
-Contracts             -> generated.ts 21 paths
+ruff check app tests              -> pass (exit 0)
+mypy app                          -> pass, 62 files (exit 0)
+alembic current                   -> 20261108_0006 (head)
+python3 -m pytest -q              -> 34 passed, 0 failed (exit 0)
+Live compose re-smoke             -> compare succeeded; confirm marks eval
+                                     -> REVERIFY6_SMOKE_OK
+CI (initial push aec7e71)         -> FAILED: invalid workflow YAML
+                                     (multiline python -c broke .github/workflows/ci.yml)
+CI fix                            -> collapsed assert to one line; yaml_ok locally
 ```
 
-**Failures:** none.
+**Local test failures:** none.
+
+**CI note:** First Phase 6 push failed immediately (0s, no jobs) due to a YAML parse error in the compose-smoke step. Fix included in this re-verification commit; watching CI on the follow-up push.
 
 ### Explicit stop
 
-Phase 7 (evaluation system) not started - awaiting approval.
+Phase 7 (evaluation system) is **not started**. Awaiting explicit approval.
 
 ### Remaining risks
 
@@ -84,6 +90,7 @@ Phase 7 (evaluation system) not started - awaiting approval.
 2. Clarified vs behavior_changed is heuristic without an LLM judge.
 3. Exact-duplicate statement pairs are suppressed from the change list (intentional).
 4. Compare requires successful extraction on both versions first.
+5. CI must go green after the workflow YAML fix (local verify already green).
 
 ---
 
@@ -97,24 +104,24 @@ Local, version-controlled evaluation harness (`make eval`) with JSONL datasets a
 
 ### Scope (in)
 
-1. Dataset layout under `evals/` (JSONL): retrieval, QA+citations, extraction, compare, insufficient-evidence, injection.
-2. Graders: Recall@k, MRR, citation precision/coverage, unsupported-claim rate, extraction F1, compare alignment accuracy, latency/token stubs.
-3. `make eval` runner producing `artifacts/eval/report.json` + HTML summary; baseline comparison for prompt/model changes.
-4. Wire accepted Phase 5/6 `is_eval_example` rows into exportable gold samples (optional import).
-5. Synthetic fixtures only (>=50 questions and >=20 extraction examples as exit target - may bootstrap with stubs/synthetics).
-6. CI job for eval (non-blocking first if thresholds need calibration).
+1. **Datasets** under `evals/` (JSONL): retrieval, QA+citations, extraction, compare, insufficient-evidence, injection. Bootstrap with synthetic fixtures; target >=50 questions and >=20 extraction examples.
+2. **Graders:** Recall@k, MRR, citation precision/coverage, unsupported-claim rate, extraction F1, compare alignment accuracy, latency/token stubs.
+3. **Runner:** `make eval` writes `artifacts/eval/report.json` + HTML summary; baseline comparison for prompt/model changes.
+4. **Gold import (optional):** export accepted Phase 5/6 `is_eval_example` rows into eval samples.
+5. **CI:** eval job (advisory first if thresholds need calibration; then blocking).
+6. Constraints: ASCII hyphens; no LangChain; no confidential fixtures; stub/offline in CI.
 
 ### Non-goals
 
 - Hosted tracing product UI
 - Real auth (Phase 8)
-- Production OpenAI spend in CI (stub + offline fixtures)
+- Paid OpenAI calls in CI
 
-### Exit criteria to verify
+### Exit criteria to verify before stop
 
-| Criterion | Proof |
+| Criterion | How we will prove it |
 | --- | --- |
-| `make eval` produces JSON and HTML | Command output artifacts |
+| `make eval` produces JSON and HTML | Command + artifact paths |
 | Prompt/model changes comparable to baseline | Diff section in report |
 | CI can block below thresholds | Workflow step (advisory then enforce) |
 | >=50 questions and >=20 extraction examples | Dataset counts in report |
@@ -122,5 +129,11 @@ Local, version-controlled evaluation harness (`make eval`) with JSONL datasets a
 ### Implementation sketch
 
 1. Branch `cursor/phase7-evaluation-harness-018c` from Phase 6.
-2. `evals/` datasets + `services/api/app/eval/**` or `tools/eval`.
-3. Makefile target + CI; update progress; open PR; **stop for Phase 8 approval**.
+2. `evals/` datasets + eval package/tools; Makefile + CI.
+3. Update progress; open PR; **stop for Phase 8 approval**.
+
+### Risks for Phase 7
+
+- Synthetic gold labels may inflate metrics vs real specs.
+- Threshold calibration needs iteration before hard CI gates.
+- Latency/cost metrics are stubs without live model traffic in CI.

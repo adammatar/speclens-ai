@@ -189,14 +189,7 @@ jobs:
             sleep 1
           done
           test "$CSTATUS" = "succeeded"
-          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['changes'];
-for c in d['changes']:
-  assert c['category']
-  if c['category'] in {'added','removed'}:
-    assert c.get('old_source_quote') or c.get('new_source_quote')
-  else:
-    assert c.get('old_source_quote') and c.get('new_source_quote')
-chg=d['changes'][0]['id']; open('/tmp/chg','w').write(chg)" "$CJ"
+          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['changes']; assert all((c.get('old_source_quote') or c.get('new_source_quote')) if c['category'] in ('added','removed') else (c.get('old_source_quote') and c.get('new_source_quote')) for c in d['changes']); open('/tmp/chg','w').write(d['changes'][0]['id'])" "$CJ"
           CHG=$(cat /tmp/chg)
           DEC=$(curl -sf -X PATCH "http://127.0.0.1:8000/api/v1/comparisons/changes/${CHG}" \
             -H 'Content-Type: application/json' -d '{"decision":"confirmed"}')
