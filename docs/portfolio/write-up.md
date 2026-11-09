@@ -62,6 +62,16 @@ Dataset counts: retrieval 40 + QA 20 = 60 question-like examples; extraction 24;
 
 This repository was implemented as a phased greenfield build (engineering foundation → ingestion → retrieval → cited QA → extraction → compare → eval harness → security → React UX/deploy → portfolio packaging), with stop-for-approval between phases and CI on each stacked PR.
 
+## Portfolio case study (one-pager)
+
+**Situation.** Spec review is slow and AI helpers often invent citations or lose provenance.
+
+**Approach.** One API (FastAPI) with hybrid retrieval, cited QA, structured extraction, version compare, offline eval gates, API-key RBAC, and a React operator UI — stubs by default so CI stays free of live LLM spend.
+
+**Result.** End-to-end local/prod-style Compose path; eval harness with ≥50 questions and ≥20 extraction examples; portfolio media regenerated deterministically without browser password-manager UI.
+
+**Résumé line.** Built an evaluation-driven AI platform for technical specifications using Python, FastAPI, PostgreSQL/pgvector and optional LLM APIs — hybrid retrieval, cited answers, structured requirement extraction, document versioning, and automated evaluation of retrieval quality and citation accuracy.
+
 ## Demo without confidential data
 
 Use synthetic fixtures only (`services/api/tests/fixtures/sample.md`, eval JSONL). Reset locally with `./scripts/demo_reset.sh`. Do not publish customer SharePoint/DOCX content.
