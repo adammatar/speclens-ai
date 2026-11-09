@@ -64,6 +64,7 @@ More media: [`docs/portfolio/`](docs/portfolio/).
 - Offline graders and thresholds: [`docs/evaluation.md`](docs/evaluation.md)
 - Portfolio metrics summary: [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md)
 - Trust boundaries and checklist: [`docs/security.md`](docs/security.md)
+- Optional **Gemini free tier** for cited chat (`GENERATION_BACKEND=openai_compat`, model `gemini-3.8-flash`): [`docs/deploy.md`](docs/deploy.md)
 
 **No confidential customer documents** are published. Demo corpus is synthetic fixtures under `services/api/tests/fixtures/` and generated eval JSONL.
 
