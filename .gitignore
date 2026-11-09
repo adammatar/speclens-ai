@@ -51,3 +51,6 @@ artifacts/
 *.pem
 *.key
 .secrets/
+
+# Playwright transient recordings
+docs/portfolio/media/page@*.webm

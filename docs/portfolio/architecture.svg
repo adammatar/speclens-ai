@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="SpecLens AI architecture">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7fbfc"/>
+      <stop offset="100%" stop-color="#e8eef1"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0B1F24"/>
+    </marker>
+  </defs>
+  <rect width="960" height="540" fill="url(#bg)"/>
+  <text x="40" y="48" font-family="Georgia, serif" font-size="28" fill="#0B1F24">SpecLens AI</text>
+  <text x="40" y="76" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#4a6670">Evaluation-driven specification platform</text>
+
+  <!-- Browser -->
+  <rect x="40" y="120" width="200" height="90" rx="14" fill="#0B1F24"/>
+  <text x="140" y="158" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#F4F8F9">React + Vite SPA</text>
+  <text x="140" y="182" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#E2A14A">sessionStorage API key</text>
+
+  <!-- API -->
+  <rect x="320" y="110" width="220" height="110" rx="14" fill="#1a333a"/>
+  <text x="430" y="148" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#F4F8F9">FastAPI</text>
+  <text x="430" y="172" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">auth · search · QA · extract · compare</text>
+  <text x="430" y="194" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">OpenAPI contracts</text>
+
+  <!-- Worker -->
+  <rect x="620" y="110" width="200" height="110" rx="14" fill="#1a333a"/>
+  <text x="720" y="155" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#F4F8F9">Celery workers</text>
+  <text x="720" y="180" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">ingest · embed · extract · compare</text>
+
+  <!-- Data plane -->
+  <rect x="160" y="320" width="180" height="100" rx="14" fill="#ffffff" stroke="#0B1F24" stroke-width="2"/>
+  <text x="250" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#0B1F24">Postgres + pgvector</text>
+  <text x="250" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">chunks · FTS · HNSW</text>
+
+  <rect x="390" y="320" width="180" height="100" rx="14" fill="#ffffff" stroke="#0B1F24" stroke-width="2"/>
+  <text x="480" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#0B1F24">Redis</text>
+  <text x="480" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">Celery broker / results</text>
+
+  <rect x="620" y="320" width="200" height="100" rx="14" fill="#ffffff" stroke="#0B1F24" stroke-width="2"/>
+  <text x="720" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#0B1F24">Object storage</text>
+  <text x="720" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">uploaded document bytes</text>
+
+  <!-- Eval -->
+  <rect x="40" y="320" width="90" height="100" rx="14" fill="#E2A14A"/>
+  <text x="85" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#0B1F24">Evals</text>
+  <text x="85" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" fill="#0B1F24">JSONL</text>
+
+  <!-- Arrows -->
+  <line x1="240" y1="165" x2="320" y2="165" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="540" y1="165" x2="620" y2="165" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="430" y1="220" x2="250" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="430" y1="220" x2="480" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="720" y1="220" x2="720" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="720" y1="220" x2="550" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <text x="40" y="500" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">Stub or OpenAI backends for embeddings / generation / extraction · API keys never in the browser bundle</text>
+</svg>
