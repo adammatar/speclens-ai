@@ -26,6 +26,7 @@ from app.ingestion.service import (
     get_document,
     reprocess_document_version,
     upload_document,
+    upload_document_version,
 )
 from app.ingestion.validate import UploadValidationError
 
@@ -144,6 +145,49 @@ def reprocess_endpoint(
         document_id=result.document_id,
         document_version_id=result.document_version_id,
         job_id=result.job_id,
+    )
+
+
+@router.post(
+    "/{document_id}/versions",
+    response_model=UploadAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def upload_document_version_endpoint(
+    document_id: uuid.UUID,
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+) -> UploadAcceptedResponse:
+    raw = await file.read()
+    try:
+        result = upload_document_version(
+            session,
+            document_id,
+            filename=file.filename or "upload.bin",
+            content_type=file.content_type,
+            data=raw,
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except DuplicateDocumentError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Duplicate document content",
+                "document_id": exc.document_id,
+                "document_version_id": exc.document_version_id,
+                "sha256": exc.sha256,
+            },
+        ) from exc
+    except UploadValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    enqueue_ingest_job(result.job_id)
+    return UploadAcceptedResponse(
+        document_id=result.document_id,
+        document_version_id=result.document_version_id,
+        job_id=result.job_id,
+        sha256=result.sha256,
     )
 
 

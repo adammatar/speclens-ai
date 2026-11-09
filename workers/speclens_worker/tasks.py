@@ -48,6 +48,28 @@ def embed_document_version(self: Any, document_version_id: str) -> dict[str, obj
         session.close()
 
 
+@app.task(name="speclens.compare_document_versions", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
+def compare_document_versions(self: Any, job_id: str) -> dict[str, object]:
+    """Compare extracted requirements across two document versions."""
+    from app.compare.pipeline import CompareError, run_comparison_job
+    from app.db.session import get_session_factory
+
+    session = get_session_factory()()
+    try:
+        return run_comparison_job(session, uuid.UUID(job_id))
+    except (CompareError, LookupError) as exc:
+        logger.error(
+            "compare_document_versions_permanent_failure",
+            extra={"job_id": job_id, "error": str(exc)},
+        )
+        return {"status": "failed", "job_id": job_id, "error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("compare_document_versions_task_failed", extra={"job_id": job_id})
+        raise self.retry(exc=exc) from exc
+    finally:
+        session.close()
+
+
 @app.task(name="speclens.extract_requirements", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
 def extract_requirements(self: Any, job_id: str) -> dict[str, object]:
     """Run resumable requirement extraction for a document version."""

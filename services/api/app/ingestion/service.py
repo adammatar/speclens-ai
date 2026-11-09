@@ -143,6 +143,97 @@ def upload_document(
     )
 
 
+def upload_document_version(
+    session: Session,
+    document_id: uuid.UUID,
+    *,
+    filename: str,
+    content_type: str | None,
+    data: bytes,
+    settings: Settings | None = None,
+    storage: StorageInterface | None = None,
+) -> UploadResult:
+    """Upload a new version of an existing document (Phase 6)."""
+    cfg = settings or get_settings()
+    store = storage or get_storage(cfg)
+    document = session.get(Document, document_id)
+    if document is None:
+        raise NotFoundError(f"Document not found: {document_id}")
+
+    validated: ValidatedUpload = validate_upload(
+        filename=filename,
+        content_type=content_type,
+        size=len(data),
+        max_bytes=cfg.max_upload_bytes,
+    )
+    digest = sha256_hex(data)
+    existing = session.scalar(
+        select(DocumentVersion).where(
+            DocumentVersion.workspace_id == document.workspace_id,
+            DocumentVersion.sha256 == digest,
+        )
+    )
+    if existing is not None:
+        raise DuplicateDocumentError(
+            document_id=str(existing.document_id),
+            document_version_id=str(existing.id),
+            sha256=digest,
+        )
+
+    latest = session.scalar(
+        select(DocumentVersion.version_number)
+        .where(DocumentVersion.document_id == document.id)
+        .order_by(DocumentVersion.version_number.desc())
+        .limit(1)
+    )
+    next_version = int(latest or 0) + 1
+    version_id = uuid.uuid4()
+    key = _storage_key(document.workspace_id, version_id, validated.filename)
+    store.put_bytes(key, data)
+
+    version = DocumentVersion(
+        id=version_id,
+        document_id=document.id,
+        workspace_id=document.workspace_id,
+        version_number=next_version,
+        filename=validated.filename,
+        content_type=validated.content_type,
+        byte_size=validated.size,
+        sha256=digest,
+        storage_key=key,
+        status=DocumentVersionStatus.PENDING,
+    )
+    session.add(version)
+    session.flush()
+
+    job = IngestionJob(
+        document_version_id=version.id,
+        status=IngestionJobStatus.QUEUED,
+        progress_pct=0,
+        attempts=0,
+    )
+    session.add(job)
+    session.commit()
+
+    logger.info(
+        "document_version_uploaded",
+        extra={
+            "document_id": str(document.id),
+            "document_version_id": str(version.id),
+            "job_id": str(job.id),
+            "version_number": next_version,
+            "sha256": digest,
+        },
+    )
+    return UploadResult(
+        document_id=document.id,
+        document_version_id=version.id,
+        job_id=job.id,
+        sha256=digest,
+        deduplicated=False,
+    )
+
+
 def delete_document(
     session: Session,
     document_id: uuid.UUID,

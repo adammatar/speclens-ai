@@ -3,6 +3,9 @@ export const openApiTitle = "SpecLens AI API" as const;
 export const openApiVersion = "0.1.0" as const;
 
 export type ApiPath =
+  | "/api/v1/comparisons"
+  | "/api/v1/comparisons/changes/{change_id}"
+  | "/api/v1/comparisons/{job_id}"
   | "/api/v1/conversations"
   | "/api/v1/conversations/{conversation_id}"
   | "/api/v1/conversations/{conversation_id}/messages"
@@ -12,6 +15,7 @@ export type ApiPath =
   | "/api/v1/documents/versions/{document_version_id}/extractions"
   | "/api/v1/documents/versions/{document_version_id}/reprocess"
   | "/api/v1/documents/{document_id}"
+  | "/api/v1/documents/{document_id}/versions"
   | "/api/v1/extractions/{job_id}"
   | "/api/v1/health"
   | "/api/v1/ready"
@@ -31,6 +35,9 @@ export interface ReadyResponse {
 }
 
 export const knownPaths: readonly ApiPath[] = [
+  "/api/v1/comparisons",
+  "/api/v1/comparisons/changes/{change_id}",
+  "/api/v1/comparisons/{job_id}",
   "/api/v1/conversations",
   "/api/v1/conversations/{conversation_id}",
   "/api/v1/conversations/{conversation_id}/messages",
@@ -40,6 +47,7 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/documents/versions/{document_version_id}/extractions",
   "/api/v1/documents/versions/{document_version_id}/reprocess",
   "/api/v1/documents/{document_id}",
+  "/api/v1/documents/{document_id}/versions",
   "/api/v1/extractions/{job_id}",
   "/api/v1/health",
   "/api/v1/ready",

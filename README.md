@@ -2,16 +2,17 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 5 adds structured requirement extraction with review states, provenance, and CSV/JSON export (stub extractor by default; optional OpenAI Structured Outputs).
+Phase 6 adds version comparison and requirement traceability (align requirements across versions, classify changes, confirm/reject for eval).
 
 ## Stack
 
 - **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
-- **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`, `speclens.extract_requirements`)
-- **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess
+- **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`, `speclens.extract_requirements`, `speclens.compare_document_versions`)
+- **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess, new document versions
 - **Retrieval:** stub/OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF search
 - **QA:** conversations/messages/citations; stub or OpenAI Responses generator; citation allow-lists
 - **Extraction:** section jobs, Pydantic schema validation, review states, CSV/JSON export
+- **Compare:** requirement alignment, change categories, confirm/reject, Jira/test/file links
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
 - **Web:** `apps/web` placeholder (Nuxt in a later phase)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
@@ -46,6 +47,10 @@ API docs (local): http://127.0.0.1:8000/docs
 - `GET /api/v1/requirements` - list/filter requirements
 - `PATCH /api/v1/requirements/{id}` - edit / set review state (preserves original payload)
 - `GET /api/v1/requirements/export` - CSV or JSON export
+- `POST /api/v1/documents/{id}/versions` - upload a new version of an existing document
+- `POST /api/v1/comparisons` - compare requirements between two versions
+- `GET /api/v1/comparisons/{job_id}` - comparison status + change list with source quotes
+- `PATCH /api/v1/comparisons/changes/{id}` - confirm or reject a detected change
 
 Migrations run automatically on API container start (`alembic upgrade head`). To run manually:
 

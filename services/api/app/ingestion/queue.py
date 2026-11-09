@@ -73,3 +73,17 @@ def enqueue_extraction_job(job_id: uuid.UUID) -> str:
         extra={"job_id": str(job_id), "celery_task_id": task_id},
     )
     return task_id
+
+
+def enqueue_comparison_job(job_id: uuid.UUID) -> str:
+    """Publish speclens.compare_document_versions for a queued comparison job."""
+    async_result = get_celery_client().send_task(
+        "speclens.compare_document_versions",
+        args=[str(job_id)],
+    )
+    task_id = str(async_result.id)
+    logger.info(
+        "comparison_job_enqueued",
+        extra={"job_id": str(job_id), "celery_task_id": task_id},
+    )
+    return task_id

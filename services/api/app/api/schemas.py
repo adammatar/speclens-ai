@@ -230,6 +230,10 @@ class RequirementResponse(BaseModel):
     review_state: str
     original_payload: dict[str, object]
     is_eval_example: bool
+    jira_ticket_id: str | None = None
+    source_file: str | None = None
+    test_case_id: str | None = None
+    implementation_note: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -243,3 +247,61 @@ class EditRequirementRequest(BaseModel):
     dependencies: list[str] | None = None
     ambiguities: list[str] | None = None
     review_state: str | None = None
+    jira_ticket_id: str | None = None
+    source_file: str | None = None
+    test_case_id: str | None = None
+    implementation_note: str | None = None
+
+
+class CreateComparisonRequest(BaseModel):
+    base_document_version_id: uuid.UUID
+    target_document_version_id: uuid.UUID
+
+
+class StartComparisonResponse(BaseModel):
+    job_id: uuid.UUID
+    status: str = "queued"
+    base_document_version_id: uuid.UUID
+    target_document_version_id: uuid.UUID
+
+
+class RequirementChangeResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    comparison_job_id: uuid.UUID
+    category: str
+    base_requirement_id: uuid.UUID | None = None
+    target_requirement_id: uuid.UUID | None = None
+    similarity: float | None = None
+    old_statement: str | None = None
+    new_statement: str | None = None
+    old_source_quote: str | None = None
+    new_source_quote: str | None = None
+    decision: str
+    is_eval_example: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class ComparisonJobResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    base_document_version_id: uuid.UUID
+    target_document_version_id: uuid.UUID
+    status: str
+    progress_pct: int
+    error_message: str | None = None
+    attempts: int
+    change_count: int
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    changes: list[RequirementChangeResponse] = Field(default_factory=list)
+
+
+class DecideChangeRequest(BaseModel):
+    decision: str = Field(pattern="^(confirmed|rejected)$")
