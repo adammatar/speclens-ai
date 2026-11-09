@@ -3,6 +3,7 @@ import type {
   AnswerTurn,
   Chunk,
   ComparisonJob,
+  ConversationDetail,
   ConversationSummary,
   DocumentDetail,
   DocumentSummary,
@@ -94,6 +95,19 @@ export async function uploadDocument(
   return request("/api/v1/documents/upload", apiKey, { method: "POST", body: form });
 }
 
+export async function uploadDocumentVersion(
+  apiKey: string,
+  documentId: string,
+  file: File,
+): Promise<{ document_id: string; document_version_id: string; job_id: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  return request(`/api/v1/documents/${documentId}/versions`, apiKey, {
+    method: "POST",
+    body: form,
+  });
+}
+
 export async function getJob(apiKey: string, jobId: string): Promise<JobStatus> {
   return request(`/api/v1/documents/jobs/${jobId}`, apiKey);
 }
@@ -133,6 +147,13 @@ export async function listConversations(apiKey: string): Promise<ConversationSum
     `/api/v1/conversations?workspace_id=${DEFAULT_WORKSPACE_ID}`,
     apiKey,
   );
+}
+
+export async function getConversation(
+  apiKey: string,
+  conversationId: string,
+): Promise<ConversationDetail> {
+  return request(`/api/v1/conversations/${conversationId}`, apiKey);
 }
 
 export async function createConversation(

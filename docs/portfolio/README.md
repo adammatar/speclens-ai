@@ -1,5 +1,9 @@
 # Portfolio pack
 
+> **Note (2026-11-09):** The web UI was redesigned (Home split workspace, iOS-inspired chrome).
+> After merging `cursor/ux-ios-workspace-redesign-018c`, re-run `make portfolio-media` to refresh
+> screenshots and the walkthrough video.
+
 Assets for presenting SpecLens AI. Screenshots and the demo video are captured with
 `scripts/capture_portfolio_media.mjs` (Playwright, password-manager UI disabled) — not
 manual browser automation — so Chrome “Save password?” bubbles never appear.

@@ -4,50 +4,42 @@ import { useAuth } from "../lib/auth";
 import type { MetaInfo } from "../lib/types";
 
 export function SettingsPage() {
-  const { apiKey, signOut } = useAuth();
+  const { apiKey } = useAuth();
   const [meta, setMeta] = useState<MetaInfo | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getMeta()
-      .then(setMeta)
-      .catch((err) => setError(err instanceof Error ? err.message : "Meta load failed"));
+    getMeta().then(setMeta).catch(() => setMeta(null));
   }, []);
 
   return (
-    <div className="stack">
+    <div className="main-pad stack" style={{ maxWidth: 640 }}>
       <div className="page-head">
         <div>
           <h1>Settings</h1>
-          <p>Retention and deployment metadata — no secrets in this panel.</p>
+          <p>Workspace session and runtime backends.</p>
         </div>
       </div>
-      {error ? <div className="error">{error}</div> : null}
-      <div className="metrics">
-        <div className="metric">
-          <strong>{meta?.version ?? "—"}</strong>
-          <span className="muted">API version</span>
+      <div className="version-card" style={{ display: "block" }}>
+        <div className="field">
+          <label>Session API key</label>
+          <input readOnly value={apiKey ? "••••••••••••••••" : ""} />
         </div>
-        <div className="metric">
-          <strong>{meta?.retention_days ?? "—"}</strong>
-          <span className="muted">Retention days</span>
-        </div>
-        <div className="metric">
-          <strong>{meta?.deployment_mode ?? "—"}</strong>
-          <span className="muted">Deployment mode</span>
-        </div>
-        <div className="metric">
-          <strong>{meta?.auth_required ? "on" : "off"}</strong>
-          <span className="muted">Auth required</span>
-        </div>
+        <p className="muted" style={{ marginTop: "0.75rem", fontSize: "0.85rem" }}>
+          Stored in sessionStorage only. Sign out clears it.
+        </p>
       </div>
-      <p className="muted">
-        API key present: {apiKey ? "yes (sessionStorage)" : "no"}. OpenAI keys never ship in
-        this bundle.
-      </p>
-      <button className="btn secondary" type="button" onClick={signOut}>
-        Clear session key
-      </button>
+      <div className="version-card" style={{ display: "block" }}>
+        <strong>Runtime</strong>
+        <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
+          Version {meta?.version ?? "…"} · mode {meta?.deployment_mode ?? "…"}
+          <br />
+          Embeddings {meta?.embedding_backend ?? "…"} · Generation{" "}
+          {meta?.generation_backend ?? "…"} · Extraction {meta?.extraction_backend ?? "…"}
+          <br />
+          Retention {meta?.retention_days ?? "—"} days · Auth{" "}
+          {meta?.auth_required ? "required" : "open"}
+        </p>
+      </div>
     </div>
   );
 }

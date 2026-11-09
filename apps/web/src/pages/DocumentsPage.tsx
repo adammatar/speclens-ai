@@ -1,51 +1,188 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { listDocuments } from "../lib/api";
+import {
+  deleteDocument,
+  getDocument,
+  listDocuments,
+  uploadDocument,
+  uploadDocumentVersion,
+} from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { statusLabel } from "../lib/format";
+import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { DocumentSummary } from "../lib/types";
 
 export function DocumentsPage() {
   const { apiKey } = useAuth();
-  const [rows, setRows] = useState<DocumentSummary[]>([]);
+  const [docs, setDocs] = useState<DocumentSummary[]>([]);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pipeline, setPipeline] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const versionRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  async function refresh() {
+    if (!apiKey) return;
+    setDocs(await listDocuments(apiKey));
+  }
 
   useEffect(() => {
-    if (!apiKey) return;
-    listDocuments(apiKey)
-      .then(setRows)
-      .catch((err) => setError(err instanceof Error ? err.message : "Load failed"));
+    refresh().catch((err) =>
+      setError(err instanceof Error ? err.message : "Failed to load"),
+    );
   }, [apiKey]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return docs.filter((d) => {
+      if (q && !d.title.toLowerCase().includes(q)) return false;
+      if (statusFilter !== "all" && (d.latest_status || "") !== statusFilter) return false;
+      return true;
+    });
+  }, [docs, query, statusFilter]);
+
+  async function handleUpload(kind: "new" | "version", file: File, documentId?: string) {
+    if (!apiKey) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setPipeline("Uploading…");
+      let previousVersionId: string | null = null;
+      if (kind === "version" && documentId) {
+        const before = await getDocument(apiKey, documentId);
+        const sorted = [...before.versions].sort(
+          (a, b) => b.version_number - a.version_number,
+        );
+        previousVersionId = sorted[0]?.id ?? null;
+      }
+      const accepted =
+        kind === "new"
+          ? await uploadDocument(apiKey, file)
+          : await uploadDocumentVersion(apiKey, documentId!, file);
+      setPipeline("Reading and indexing…");
+      await waitForJob(apiKey, accepted.job_id, (pct, status) =>
+        setPipeline(`Reading… ${status} (${pct}%)`),
+      );
+      await runPostIngestPipeline(apiKey, {
+        versionId: accepted.document_version_id,
+        previousVersionId,
+        onEvent: (ev) => setPipeline(ev.detail),
+      });
+      await refresh();
+      setPipeline(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+      setPipeline(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="stack">
+    <div className="main-pad">
       <div className="page-head">
         <div>
           <h1>Documents</h1>
-          <p>Library of uploaded specifications in the default workspace.</p>
+          <p>Full library with search and filters. Upload new versions without leaving this page.</p>
         </div>
-        <Link className="btn amber" to="/documents/upload">
-          Upload document
-        </Link>
+        <button className="btn" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
+          Upload
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          hidden
+          accept=".md,.markdown,.pdf,.docx,text/markdown,application/pdf"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void handleUpload("new", f);
+            e.target.value = "";
+          }}
+        />
       </div>
-      {error ? <div className="error">{error}</div> : null}
-      <div className="list">
-        {rows.length === 0 ? (
-          <p className="muted">No documents yet.</p>
-        ) : (
-          rows.map((row) => (
-            <Link key={row.id} className="list-item" to={`/documents/${row.id}`}>
+
+      {error ? <div className="error" style={{ marginBottom: "0.75rem" }}>{error}</div> : null}
+      {pipeline ? <div className="pipeline" style={{ marginBottom: "0.75rem", borderRadius: 12 }}>{pipeline}</div> : null}
+
+      <div className="doc-toolbar" style={{ padding: 0, marginBottom: "0.75rem" }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by title"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ maxWidth: 160 }}
+        >
+          <option value="all">All status</option>
+          <option value="succeeded">Ready</option>
+          <option value="running">Reading</option>
+          <option value="queued">Queued</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+
+      <div className="library-list">
+        {filtered.map((doc) => {
+          const badgeClass =
+            doc.latest_status === "succeeded"
+              ? "ready"
+              : doc.latest_status === "failed"
+                ? "failed"
+                : "busy";
+          return (
+            <div key={doc.id} className="library-row">
               <div>
-                <strong>{row.title}</strong>
-                <div className="muted">
-                  {row.version_count} version{row.version_count === 1 ? "" : "s"}
+                <strong>
+                  <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
+                </strong>
+                <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
+                  {doc.version_count} version{doc.version_count === 1 ? "" : "s"} ·{" "}
+                  <span className={`badge ${badgeClass}`}>{statusLabel(doc.latest_status)}</span>
                 </div>
               </div>
-              <span className={`badge ${row.latest_status === "ready" ? "ok" : "warn"}`}>
-                {row.latest_status ?? "unknown"}
-              </span>
-            </Link>
-          ))
-        )}
+              <div className="row">
+                <button
+                  type="button"
+                  className="btn secondary sm"
+                  disabled={busy}
+                  onClick={() => versionRefs.current[doc.id]?.click()}
+                >
+                  New version
+                </button>
+                <input
+                  ref={(el) => {
+                    versionRefs.current[doc.id] = el;
+                  }}
+                  type="file"
+                  hidden
+                  accept=".md,.markdown,.pdf,.docx,text/markdown,application/pdf"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void handleUpload("version", f, doc.id);
+                    e.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn danger sm"
+                  onClick={async () => {
+                    if (!apiKey) return;
+                    if (!window.confirm(`Delete “${doc.title}”?`)) return;
+                    await deleteDocument(apiKey, doc.id);
+                    await refresh();
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {!filtered.length ? <div className="empty">No matching documents.</div> : null}
       </div>
     </div>
   );

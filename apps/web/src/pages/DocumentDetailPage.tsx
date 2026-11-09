@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { deleteDocument, getDocument, listChunks, startExtraction } from "../lib/api";
+import {
+  deleteDocument,
+  getDocument,
+  listChunks,
+  uploadDocumentVersion,
+} from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { formatBytes, statusLabel } from "../lib/format";
+import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { Chunk, DocumentDetail } from "../lib/types";
 
 export function DocumentDetailPage() {
@@ -11,85 +18,150 @@ export function DocumentDetailPage() {
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [extractStatus, setExtractStatus] = useState<string | null>(null);
+  const [pipeline, setPipeline] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const latest = useMemo(() => {
-    if (!doc?.versions.length) return null;
-    return [...doc.versions].sort((a, b) => b.version_number - a.version_number)[0];
+  const versions = useMemo(() => {
+    if (!doc) return [];
+    return [...doc.versions].sort((a, b) => b.version_number - a.version_number);
   }, [doc]);
 
-  useEffect(() => {
+  const latest = versions[0] ?? null;
+  const previous = versions[1] ?? null;
+
+  async function refresh() {
     if (!apiKey || !id) return;
-    getDocument(apiKey, id)
-      .then(setDoc)
-      .catch((err) => setError(err instanceof Error ? err.message : "Load failed"));
-  }, [apiKey, id]);
-
-  useEffect(() => {
-    if (!apiKey || !latest) return;
-    listChunks(apiKey, latest.id)
-      .then(setChunks)
-      .catch(() => setChunks([]));
-  }, [apiKey, latest]);
-
-  async function onExtract() {
-    if (!apiKey || !latest) return;
-    setExtractStatus("starting");
-    try {
-      const job = await startExtraction(apiKey, latest.id);
-      setExtractStatus(`queued ${job.job_id}`);
-      navigate(`/requirements?version=${latest.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Extraction failed");
-      setExtractStatus(null);
+    const detail = await getDocument(apiKey, id);
+    setDoc(detail);
+    const sorted = [...detail.versions].sort((a, b) => b.version_number - a.version_number);
+    if (sorted[0]) {
+      setChunks(await listChunks(apiKey, sorted[0].id));
     }
   }
 
-  async function onDelete() {
+  useEffect(() => {
+    refresh().catch((err) =>
+      setError(err instanceof Error ? err.message : "Load failed"),
+    );
+  }, [apiKey, id]);
+
+  async function onNewVersion(file: File) {
     if (!apiKey || !id) return;
-    if (!window.confirm("Delete this document and all derived data?")) return;
-    await deleteDocument(apiKey, id);
-    navigate("/documents");
+    setBusy(true);
+    setError(null);
+    try {
+      setPipeline("Uploading new version…");
+      const accepted = await uploadDocumentVersion(apiKey, id, file);
+      setPipeline("Reading and indexing…");
+      await waitForJob(apiKey, accepted.job_id, (pct, status) =>
+        setPipeline(`Reading… ${status} (${pct}%)`),
+      );
+      await runPostIngestPipeline(apiKey, {
+        versionId: accepted.document_version_id,
+        previousVersionId: latest?.id ?? null,
+        onEvent: (ev) => setPipeline(ev.detail),
+      });
+      await refresh();
+      setPipeline(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Version upload failed");
+      setPipeline(null);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <div className="stack">
+    <div className="main-pad stack">
       <div className="page-head">
         <div>
           <h1>{doc?.title ?? "Document"}</h1>
-          <p>Viewer for chunks and version metadata.</p>
+          <p>
+            Latest and previous versions are kept for change questions. Processing runs
+            automatically in the background.
+          </p>
         </div>
         <div className="row">
           <Link className="btn secondary" to="/documents">
             Library
           </Link>
-          <button className="btn" type="button" onClick={onExtract} disabled={!latest}>
-            Extract requirements
+          <Link className="btn secondary" to="/">
+            Home chat
+          </Link>
+          <button
+            className="btn"
+            type="button"
+            disabled={busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            Upload new version
           </button>
-          <button className="btn secondary" type="button" onClick={onDelete}>
+          <input
+            ref={fileRef}
+            type="file"
+            hidden
+            accept=".md,.markdown,.pdf,.docx,text/markdown,application/pdf"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void onNewVersion(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            className="btn danger"
+            type="button"
+            onClick={async () => {
+              if (!apiKey || !id) return;
+              if (!window.confirm("Delete this document and all versions?")) return;
+              await deleteDocument(apiKey, id);
+              navigate("/documents");
+            }}
+          >
             Delete
           </button>
         </div>
       </div>
+
       {error ? <div className="error">{error}</div> : null}
-      {latest ? (
-        <p className="muted">
-          Version {latest.version_number} · {latest.filename} · {latest.status} ·{" "}
-          {latest.chunk_count} chunks
-          {extractStatus ? ` · extract ${extractStatus}` : ""}
-        </p>
-      ) : null}
-      <div className="stack">
-        {chunks.map((chunk) => (
-          <article key={chunk.id} className="chunk">
-            <h3>
-              {chunk.heading_path || `Chunk ${chunk.chunk_index}`}
-              {chunk.page_number != null ? ` · p.${chunk.page_number}` : ""}
+      {pipeline ? <div className="pipeline" style={{ borderRadius: 12 }}>{pipeline}</div> : null}
+
+      <div className="version-list">
+        {versions.slice(0, 2).map((v, idx) => (
+          <div key={v.id} className="version-card">
+            <div>
+              <strong>
+                {idx === 0 ? "Latest" : "Previous"} · v{v.version_number}
+              </strong>
+              <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
+                {v.filename} · {formatBytes(v.byte_size)} ·{" "}
+                <span className={`badge ${v.status === "succeeded" ? "ready" : "busy"}`}>
+                  {statusLabel(v.status)}
+                </span>
+                {idx === 0 && previous ? " · kept with previous for compare" : null}
+              </div>
+            </div>
+          </div>
+        ))}
+        {!versions.length ? <div className="empty">No versions yet.</div> : null}
+      </div>
+
+      <div className="stack" style={{ marginTop: "0.5rem" }}>
+        <h2 style={{ fontSize: "1.05rem" }}>Preview (latest)</h2>
+        {chunks.slice(0, 8).map((chunk) => (
+          <article key={chunk.id} className="version-card" style={{ display: "block" }}>
+            <h3 style={{ fontSize: "0.92rem", marginBottom: 6 }}>
+              {chunk.heading_path || `Section ${chunk.chunk_index + 1}`}
             </h3>
-            <p className="prose">{chunk.text}</p>
+            <p className="muted" style={{ whiteSpace: "pre-wrap" }}>
+              {chunk.text.slice(0, 500)}
+              {chunk.text.length > 500 ? "…" : ""}
+            </p>
           </article>
         ))}
-        {!chunks.length ? <p className="muted">No chunks yet (ingest may still be running).</p> : null}
+        {!chunks.length ? (
+          <p className="muted">No preview yet — wait until status is Ready.</p>
+        ) : null}
       </div>
     </div>
   );
