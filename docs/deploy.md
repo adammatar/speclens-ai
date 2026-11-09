@@ -13,6 +13,28 @@ cd apps/web && npm install && npm run dev
 - Web (Vite): http://127.0.0.1:5173 (proxies `/api` → API)
 - Bootstrap key: `speclens-local-dev-key` (rotate before any shared host)
 
+## Gemini free tier (cited chat)
+
+SpecLens supports Google AI Studio via the OpenAI-compatible Chat Completions API.
+
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey) — **keep it local; never paste it into chat or commit it**.
+2. In repo-root `.env` (copy from `.env.example` if needed):
+
+```bash
+OPENAI_API_KEY=your-gemini-key-here
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+GENERATION_BACKEND=openai_compat
+GENERATION_MODEL=gemini-2.5-flash
+# embeddings/extraction can stay stub for first demos
+EMBEDDING_BACKEND=stub
+EXTRACTION_BACKEND=stub
+```
+
+3. Restart the stack so containers pick up env: `make down && make up && make smoke`
+4. Confirm Dashboard shows `generation` backend `openai_compat`, then ask Cited chat questions.
+
+Rate limits apply on the free tier; if requests fail, wait and retry or check AI Studio quotas.
+
 ## Production-style Compose
 
 ```bash

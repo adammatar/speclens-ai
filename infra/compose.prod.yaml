@@ -42,6 +42,12 @@ services:
       AUTH_REQUIRED: "true"
       CORS_ORIGINS: ${CORS_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      GENERATION_BACKEND: ${GENERATION_BACKEND:-stub}
+      GENERATION_MODEL: ${GENERATION_MODEL:-speclens-stub-qa-v1}
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-stub}
+      EXTRACTION_BACKEND: ${EXTRACTION_BACKEND:-stub}
     volumes:
       - speclens_storage_prod:/data/storage
     depends_on:
@@ -72,6 +78,12 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       STORAGE_LOCAL_ROOT: /data/storage
       SPECLENS_ENV: ${SPECLENS_ENV:-production}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      GENERATION_BACKEND: ${GENERATION_BACKEND:-stub}
+      GENERATION_MODEL: ${GENERATION_MODEL:-speclens-stub-qa-v1}
+      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-stub}
+      EXTRACTION_BACKEND: ${EXTRACTION_BACKEND:-stub}
     volumes:
       - speclens_storage_prod:/data/storage
     depends_on:

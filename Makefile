@@ -1,5 +1,6 @@
-COMPOSE := docker compose -f infra/compose.yaml
-COMPOSE_PROD := docker compose -f infra/compose.prod.yaml
+# --env-file .env injects Gemini/OpenAI settings into Compose ${VAR} interpolation.
+COMPOSE := docker compose --env-file .env -f infra/compose.yaml
+COMPOSE_PROD := docker compose --env-file .env -f infra/compose.prod.yaml
 PYTHON ?= python3
 API_DIR := services/api
 
@@ -28,21 +29,27 @@ install-dev:
 	$(PYTHON) -m pip install -e "workers[dev]"
 
 up:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) up -d --build
 
 up-prod:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE_PROD) up -d --build
 
 down:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) down -v
 
 logs:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) logs -f
 
 build:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) build
 
 migrate:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) run --rm api alembic upgrade head
 
 test:

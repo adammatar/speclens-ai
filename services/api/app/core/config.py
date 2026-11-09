@@ -48,7 +48,8 @@ class Settings(BaseSettings):
     search_result_limit: int = 12
     search_rerank_enabled: bool = False
 
-    generation_backend: Literal["stub", "openai"] = "stub"
+    # openai = OpenAI Responses API; openai_compat = Chat Completions (Gemini/Ollama/etc.)
+    generation_backend: Literal["stub", "openai", "openai_compat"] = "stub"
     generation_model: str = "speclens-stub-qa-v1"
     answering_prompt_version: str = "answering-v1"
     qa_context_token_budget: int = 1800
