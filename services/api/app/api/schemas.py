@@ -115,3 +115,67 @@ class SearchResponse(BaseModel):
     query: str
     workspace_id: uuid.UUID
     results: list[SearchHitResponse]
+
+
+class CreateConversationRequest(BaseModel):
+    workspace_id: uuid.UUID = Field(default=uuid.UUID("00000000-0000-4000-8000-000000000001"))
+    title: str = "New conversation"
+
+
+class ConversationSummaryResponse(BaseModel):
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class PostMessageRequest(BaseModel):
+    question: str = Field(min_length=1)
+    document_ids: list[uuid.UUID] | None = None
+    document_version_ids: list[uuid.UUID] | None = None
+    stream: bool = False
+
+
+class CitationResponse(BaseModel):
+    chunk_id: uuid.UUID
+    claim_index: int
+    source_quote: str | None = None
+
+
+class MessageResponse(BaseModel):
+    id: uuid.UUID
+    role: str
+    content: str
+    status: str
+    model: str | None = None
+    prompt_version: str | None = None
+    retrieved_chunk_ids: list[str] | None = None
+    retrieval_status: str | None = None
+    generation_status: str | None = None
+    latency_ms: int | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    citations: list[CitationResponse] = Field(default_factory=list)
+    created_at: datetime
+
+
+class ConversationDetailResponse(BaseModel):
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    messages: list[MessageResponse] = Field(default_factory=list)
+
+
+class AnswerTurnResponse(BaseModel):
+    conversation_id: uuid.UUID
+    user_message_id: uuid.UUID
+    assistant_message_id: uuid.UUID
+    status: str
+    content: str
+    retrieval_status: str
+    generation_status: str
+    retrieved_chunk_ids: list[str]
+    citation_chunk_ids: list[str]

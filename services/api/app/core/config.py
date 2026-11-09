@@ -48,6 +48,13 @@ class Settings(BaseSettings):
     search_result_limit: int = 12
     search_rerank_enabled: bool = False
 
+    generation_backend: Literal["stub", "openai"] = "stub"
+    generation_model: str = "speclens-stub-qa-v1"
+    answering_prompt_version: str = "answering-v1"
+    qa_context_token_budget: int = 1800
+    qa_min_rrf_score: float = 0.01
+    qa_max_context_chunks: int = 8
+
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"

@@ -121,6 +121,14 @@ jobs:
             -H 'Content-Type: application/json' \
             -d "{\"query\":\"hierarchical chunking\",\"document_version_ids\":[\"${VER_ID}\"],\"debug\":true}")
           python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['results']; r=d['results'][0]; assert r['excerpt']; assert r['document_version_id']" "$SEARCH"
+          CONV=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/conversations \
+            -H 'Content-Type: application/json' \
+            -d '{"title":"CI QA"}')
+          CID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['id'])" "$CONV")
+          ANS=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/conversations/${CID}/messages" \
+            -H 'Content-Type: application/json' \
+            -d "{\"question\":\"What about Markdown uploads?\",\"document_version_ids\":[\"${VER_ID}\"]}")
+          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['status'] in {'completed','insufficient_evidence'}; assert d['retrieval_status']; assert set(d.get('citation_chunk_ids') or []).issubset(set(d.get('retrieved_chunk_ids') or []))" "$ANS"
 
       - name: Tear down
         if: always()
