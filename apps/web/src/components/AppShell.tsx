@@ -16,7 +16,7 @@ export function AppShell() {
     <div className="app-shell">
       <header className="topbar">
         <NavLink to="/" className="brand-mark">
-          Spec<span>Lens</span>
+          Spec<span>Lens</span> AI
         </NavLink>
         <nav className="top-nav">
           {links.map((link) => (

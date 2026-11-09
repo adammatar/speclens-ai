@@ -36,7 +36,7 @@ export function SignInPage() {
       <form className="sign-panel stack" onSubmit={onSubmit}>
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div className="brand-mark">
-            Spec<span>Lens</span>
+            Spec<span>Lens</span> AI
           </div>
           <button
             type="button"
