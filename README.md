@@ -1,51 +1,131 @@
 # SpecLens AI
 
-Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality offline before trusting model changes.
+**Ask clear, cited questions about technical specifications — with retrieval, requirement extraction, version compare, and offline evaluation gates.**
 
-**Portfolio pack:** [`docs/portfolio/`](docs/portfolio/) — architecture diagram, write-up, screenshots, demo video.
+SpecLens AI is a full-stack portfolio project: upload Markdown/PDF/DOCX specs, chat in plain language (English or Hebrew), keep document versions, and only trust model answers that stay grounded in retrieved evidence.
 
-## Stack
+| | |
+| --- | --- |
+| ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Home workspace](docs/portfolio/screenshots/02-home.webp) |
+| ![Documents](docs/portfolio/screenshots/03-documents.webp) | ![Cited chat](docs/portfolio/screenshots/05-chat.webp) |
 
-- **API:** FastAPI, SQLAlchemy 2, Alembic, structured JSON logging
-- **Auth:** hashed API keys, workspace RBAC (owner/editor/viewer), rate limits, audit trail
-- **Workers:** Celery + Redis (ingest, embed, extract, compare)
-- **Retrieval:** stub/OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF
-- **QA / extract / compare:** cited conversations, structured requirements, version diffs
-- **Eval:** offline JSONL harness + advisory CI gates (`make eval`)
-- **Web:** React + Vite SPA (`apps/web`) — API key in `sessionStorage` only
-- **Data:** Postgres 16 + pgvector; local filesystem object storage
+[Architecture](#architecture) · [Quick start](#quick-start) · [Features](#features) · [Stack](#stack) · [Evaluation](#evaluation) · [Portfolio pack](docs/portfolio/) · [Security](#security--privacy)
 
-Python **>= 3.12**. Node.js **>= 22**.
+---
+
+## Why it exists
+
+Engineering teams live in long specs. Generic chatbots invent citations; spreadsheets drift from source; version diffs are noisy. SpecLens keeps **evidence and eval gates** next to every AI step — so answers are inspectable, not magical.
+
+## Features
+
+- **Home workspace** — iOS-inspired split UI: document library + ChatGPT-style cited chat
+- **Document ingest** — Markdown, PDF, DOCX → hierarchical chunks with heading paths
+- **Hybrid retrieval** — vector (pgvector) + lexical FTS fused with RRF
+- **Cited Q&A** — answers grounded in allow-listed chunk IDs (stub or real LLM)
+- **Requirement extraction** — structured shall/must (and Hebrew modals) with provenance
+- **Version compare** — align requirements across versions; ask “what changed?”
+- **EN / HE UI** — language toggle with full RTL for Hebrew users
+- **Offline eval harness** — retrieval, citation, extraction, compare, injection resistance
+- **Security baseline** — hashed API keys, workspace RBAC, rate limits, audit, log redaction
+- **Optional Gemini** — free-tier cited chat via OpenAI-compatible API (`openai_compat`)
 
 ## Architecture
 
-![SpecLens architecture](docs/portfolio/architecture.svg)
+![SpecLens AI architecture](docs/portfolio/architecture.svg)
 
-Browser SPA → FastAPI → Postgres / Redis / object storage, with Celery workers on the same data plane. Details: [`docs/architecture.md`](docs/architecture.md), ADR [`docs/decisions/0001-target-architecture.md`](docs/decisions/0001-target-architecture.md).
+Browser SPA → FastAPI → Postgres / Redis / object storage, with Celery workers on the same data plane.
+
+Deep dive: [`docs/architecture.md`](docs/architecture.md) · ADR: [`docs/decisions/0001-target-architecture.md`](docs/decisions/0001-target-architecture.md)
+
+## Stack
+
+| Layer | Choice |
+| --- | --- |
+| API | FastAPI, SQLAlchemy 2, Alembic, structured JSON logging |
+| Workers | Celery + Redis (ingest, embed, extract, compare) |
+| Data | Postgres 16 + pgvector (HNSW + FTS), local filesystem object store |
+| Web | React + Vite SPA — EN/HE i18n, session-only access key |
+| LLM | Pluggable stubs **or** OpenAI / Gemini (`openai_compat`) |
+| Quality | Ruff, mypy, pytest, Compose smoke, offline `make eval` |
+| Runtime | Docker Compose (dev + prod-style); Python ≥ 3.12, Node ≥ 22 |
 
 ## Quick start
 
 ```bash
+git clone https://github.com/adammatar/speclens-ai.git
+cd speclens-ai
 cp .env.example .env
-make up          # postgres, redis, api, worker
+make up          # postgres, redis, api (:8001), worker
 make smoke       # health + ready
+make demo-reset  # seed a synthetic demo document
 make web         # React UI → http://127.0.0.1:5173
 ```
 
-Sign in with a workspace API key. Local/CI bootstrap key is documented in `.env.example` only — **rotate before any shared or hosted deploy**. Never commit real secrets.
+**Sign in** with the local workspace access key: `speclens-local-dev-key`  
+(This is a SpecLens workspace gate — **not** your Gemini/OpenAI key. LLM keys stay in `.env` only; never commit them.)
 
-Production-style stack (web on `:8080`): `make up-prod`. Ops: [`docs/deploy.md`](docs/deploy.md). Demo wipe + re-seed: `make demo-reset`.
-
-API docs (local): http://127.0.0.1:8001/docs — authenticated routes need `Authorization: Bearer <key>`; `/health`, `/ready`, `/meta` stay public. (Host port **8001** avoids clashes with Cursor on `:8000`.)
-
-## Screenshots
-
-| | |
+| Useful URLs | |
 | --- | --- |
-| ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Home](docs/portfolio/screenshots/02-home.webp) |
-| ![Documents](docs/portfolio/screenshots/03-documents.webp) | ![Chat](docs/portfolio/screenshots/05-chat.webp) |
+| Web UI | http://127.0.0.1:5173 |
+| API docs | http://127.0.0.1:8001/docs |
+| Health | http://127.0.0.1:8001/api/v1/health |
 
-More media: [`docs/portfolio/`](docs/portfolio/).
+Production-style stack (nginx web on `:8080`): `make up-prod`.  
+Ops & Gemini setup: [`docs/deploy.md`](docs/deploy.md).
+
+### Try Hebrew
+
+1. Toggle **עברית** on sign-in or in the top bar  
+2. Upload `demos/hebrew-john-biography.md` or `demos/hebrew-access-control-v1.md`  
+3. Ask in Hebrew — answers follow the question language
+
+## Evaluation
+
+Offline graders run without paid LLM spend (stub backends + synthetic gold):
+
+```bash
+make eval
+```
+
+Latest harness snapshot (see caveat in the write-up):
+
+| Metric | Value |
+| --- | --- |
+| Retrieval Recall@10 | 1.00 |
+| Citation precision | 1.00 |
+| Extraction F1 | 0.94 |
+| Compare alignment | 1.00 |
+| Injection resistance | 1.00 |
+
+Full table + methodology: [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md) · [`docs/evaluation.md`](docs/evaluation.md)
+
+> Stub backends + synthetic fixtures inflate absolute scores vs production LLM traffic. The harness is for **regression control**, not marketing accuracy claims.
+
+## Security & privacy
+
+- API keys hashed at rest; cross-workspace access fail-closed  
+- Rate limits + audit trail; logs redact secrets and document bodies  
+- Complete delete removes DB rows and object bytes  
+- **No confidential customer documents** in this repo — demos are synthetic  
+
+Details: [`docs/security.md`](docs/security.md)
+
+## Portfolio pack
+
+| Asset | Path |
+| --- | --- |
+| Screenshots + walkthrough | [`docs/portfolio/`](docs/portfolio/) |
+| Technical write-up | [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md) |
+| Architecture SVG | [`docs/portfolio/architecture.svg`](docs/portfolio/architecture.svg) |
+
+Regenerate media: `make portfolio-media` (with API up + web preview on `:4173`).
+
+## Project story
+
+Greenfield phased build: foundation → ingest → retrieval → cited QA → extraction → compare → eval → security → React UX/deploy → portfolio packaging, with stop-for-approval between phases and CI on each stacked PR.
+
+**Résumé line:** Built an evaluation-driven AI platform for technical specifications (Python/FastAPI, PostgreSQL/pgvector, React) — hybrid retrieval, cited answers, structured requirement extraction, document versioning, bilingual UI, and automated evaluation of retrieval quality and citation accuracy.
 
 ## Make targets
 
@@ -56,26 +136,10 @@ More media: [`docs/portfolio/`](docs/portfolio/).
 | `make test` / `make lint` / `make typecheck` | Python quality |
 | `make eval` | Offline eval harness |
 | `make web` / `make web-build` | React app |
-| `make demo-reset` | Reset default workspace + synthetic seed |
+| `make demo-reset` | Reset workspace + synthetic seed |
 | `make contracts` | OpenAPI → TypeScript stubs |
-
-## Evaluation & security
-
-- Offline graders and thresholds: [`docs/evaluation.md`](docs/evaluation.md)
-- Portfolio metrics summary: [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md)
-- Trust boundaries and checklist: [`docs/security.md`](docs/security.md)
-- Optional **Gemini free tier** for cited chat (`GENERATION_BACKEND=openai_compat`, model `gemini-3.8-flash`): [`docs/deploy.md`](docs/deploy.md)
-
-**No confidential customer documents** are published. Demo corpus is synthetic fixtures under `services/api/tests/fixtures/` and generated eval JSONL.
-
-## Individual contribution
-
-Greenfield phased build (foundation → ingest → retrieval → cited QA → extraction → compare → eval → security → React UX/deploy → portfolio packaging), with stop-for-approval between phases and CI on each stacked PR.
-
-## Prototype note
-
-Local Docs Viewer (private offline DOCX viewer) is a UX/parsing reference only — its source is **not** copied into this repository. No LangChain dependency.
+| `make portfolio-media` | Playwright screenshots + demo video |
 
 ## License
 
-Proprietary — private repository.
+© Adam Matar. Source is published for portfolio review. All rights reserved unless otherwise noted — contact the author for reuse beyond evaluation/interview purposes.
