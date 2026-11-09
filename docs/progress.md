@@ -14,7 +14,7 @@
 
 **Branch:** `cursor/phase8-security-auth-018c`
 
-**PR:** (opened against Phase 7 branch)
+**PR:** https://github.com/adammatar/speclens-ai/pull/8
 
 ### Architecture and implementation decisions
 
