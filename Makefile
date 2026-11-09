@@ -1,12 +1,14 @@
 COMPOSE := docker compose -f infra/compose.yaml
+COMPOSE_PROD := docker compose -f infra/compose.prod.yaml
 PYTHON ?= python3
 API_DIR := services/api
 
-.PHONY: help up down logs build migrate test lint typecheck format contracts smoke clean install-dev eval
+.PHONY: help up up-prod down logs build migrate test lint typecheck format contracts smoke clean install-dev eval web web-build demo-reset
 
 help:
 	@echo "SpecLens AI developer targets"
 	@echo "  make up         Start Compose stack (postgres, redis, api, worker)"
+	@echo "  make up-prod    Production-style Compose including React web (:8080)"
 	@echo "  make down       Stop Compose stack"
 	@echo "  make migrate    Run Alembic migrations against Compose Postgres"
 	@echo "  make test       Run pytest"
@@ -15,6 +17,9 @@ help:
 	@echo "  make contracts  Generate OpenAPI + TypeScript stub types"
 	@echo "  make smoke      Compose up + health/ready smoke checks"
 	@echo "  make eval       Run offline evaluation harness (JSON + HTML reports)"
+	@echo "  make web        Run React+Vite dev server"
+	@echo "  make web-build  Production build of apps/web"
+	@echo "  make demo-reset Reset default workspace and re-seed sample.md"
 	@echo "  make install-dev Install local Python dev dependencies"
 
 install-dev:
@@ -23,6 +28,9 @@ install-dev:
 
 up:
 	$(COMPOSE) up -d --build
+
+up-prod:
+	$(COMPOSE_PROD) up -d --build
 
 down:
 	$(COMPOSE) down -v
@@ -67,6 +75,16 @@ smoke: up
 eval:
 	PYTHONPATH=. $(PYTHON) -m evals.harness $(if $(EVAL_ENFORCE),--enforce,)
 
+web:
+	cd apps/web && npm install && npm run dev
+
+web-build:
+	cd apps/web && npm install && npm run build
+
+demo-reset:
+	./scripts/demo_reset.sh
+
 clean:
 	$(COMPOSE) down -v --remove-orphans
+	$(COMPOSE_PROD) down -v --remove-orphans || true
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

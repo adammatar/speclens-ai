@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.schemas import (
     ChunkResponse,
     DocumentResponse,
+    DocumentSummaryResponse,
     DocumentVersionResponse,
     JobStatusResponse,
     ReprocessResponse,
@@ -25,6 +26,7 @@ from app.ingestion.service import (
     count_chunks,
     delete_document,
     get_document,
+    list_documents,
     reprocess_document_version,
     upload_document,
     upload_document_version,
@@ -36,6 +38,35 @@ from app.security.rate_limit import check_rate_limit
 from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("", response_model=list[DocumentSummaryResponse])
+def list_documents_endpoint(
+    workspace_id: uuid.UUID | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
+) -> list[DocumentSummaryResponse]:
+    ws = workspace_id or DEFAULT_WORKSPACE_ID
+    require_workspace_role(auth, ws, WorkspaceRole.VIEWER)
+    rows = list_documents(session, workspace_id=ws, limit=min(limit, 200), offset=max(offset, 0))
+    out: list[DocumentSummaryResponse] = []
+    for document in rows:
+        versions = list(document.versions)
+        latest = max(versions, key=lambda v: v.version_number) if versions else None
+        out.append(
+            DocumentSummaryResponse(
+                id=document.id,
+                workspace_id=document.workspace_id,
+                title=document.title,
+                created_at=document.created_at,
+                updated_at=document.updated_at,
+                version_count=len(versions),
+                latest_status=latest.status.value if latest else None,
+            )
+        )
+    return out
 
 
 @router.post(

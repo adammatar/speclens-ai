@@ -67,6 +67,18 @@ class DocumentVersionResponse(BaseModel):
     chunk_count: int = 0
 
 
+class DocumentSummaryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    workspace_id: uuid.UUID
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    version_count: int = 0
+    latest_status: str | None = None
+
+
 class DocumentResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,6 +88,16 @@ class DocumentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     versions: list[DocumentVersionResponse] = Field(default_factory=list)
+
+
+class MetaResponse(BaseModel):
+    version: str
+    deployment_mode: str
+    retention_days: int
+    auth_required: bool
+    embedding_backend: str
+    generation_backend: str
+    extraction_backend: str
 
 
 class ReprocessResponse(BaseModel):

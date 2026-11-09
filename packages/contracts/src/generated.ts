@@ -9,6 +9,7 @@ export type ApiPath =
   | "/api/v1/conversations"
   | "/api/v1/conversations/{conversation_id}"
   | "/api/v1/conversations/{conversation_id}/messages"
+  | "/api/v1/documents"
   | "/api/v1/documents/jobs/{job_id}"
   | "/api/v1/documents/upload"
   | "/api/v1/documents/versions/{document_version_id}/chunks"
@@ -18,6 +19,7 @@ export type ApiPath =
   | "/api/v1/documents/{document_id}/versions"
   | "/api/v1/extractions/{job_id}"
   | "/api/v1/health"
+  | "/api/v1/meta"
   | "/api/v1/ready"
   | "/api/v1/requirements"
   | "/api/v1/requirements/export"
@@ -41,6 +43,7 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/conversations",
   "/api/v1/conversations/{conversation_id}",
   "/api/v1/conversations/{conversation_id}/messages",
+  "/api/v1/documents",
   "/api/v1/documents/jobs/{job_id}",
   "/api/v1/documents/upload",
   "/api/v1/documents/versions/{document_version_id}/chunks",
@@ -50,6 +53,7 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/documents/{document_id}/versions",
   "/api/v1/extractions/{job_id}",
   "/api/v1/health",
+  "/api/v1/meta",
   "/api/v1/ready",
   "/api/v1/requirements",
   "/api/v1/requirements/export",

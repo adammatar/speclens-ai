@@ -21,12 +21,47 @@ from app.api.schemas import (
 )
 from app.db.models import WorkspaceRole
 from app.db.session import get_session
-from app.qa.service import QAError, create_conversation, get_conversation, post_user_message
+from app.ingestion.service import DEFAULT_WORKSPACE_ID
+from app.qa.service import (
+    QAError,
+    create_conversation,
+    get_conversation,
+    list_conversations,
+    post_user_message,
+)
 from app.security.auth import AuthContext, require_api_key
 from app.security.rate_limit import check_rate_limit
 from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
+
+
+@router.get("", response_model=list[ConversationSummaryResponse])
+def list_conversations_endpoint(
+    workspace_id: uuid.UUID | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
+) -> list[ConversationSummaryResponse]:
+    ws = workspace_id or DEFAULT_WORKSPACE_ID
+    require_workspace_role(auth, ws, WorkspaceRole.VIEWER)
+    rows = list_conversations(
+        session,
+        workspace_id=ws,
+        limit=min(limit, 200),
+        offset=max(offset, 0),
+    )
+    return [
+        ConversationSummaryResponse(
+            id=row.id,
+            workspace_id=row.workspace_id,
+            title=row.title,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+        for row in rows
+    ]
 
 
 @router.post("", response_model=ConversationSummaryResponse, status_code=status.HTTP_201_CREATED)

@@ -76,6 +76,24 @@ def get_conversation(session: Session, conversation_id: uuid.UUID) -> Conversati
     return conversation
 
 
+def list_conversations(
+    session: Session,
+    *,
+    workspace_id: uuid.UUID,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Conversation]:
+    return list(
+        session.scalars(
+            select(Conversation)
+            .where(Conversation.workspace_id == workspace_id)
+            .order_by(Conversation.updated_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+
+
 def post_user_message(
     session: Session,
     conversation_id: uuid.UUID,
