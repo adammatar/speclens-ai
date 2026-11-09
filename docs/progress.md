@@ -14,7 +14,7 @@
 
 **Branch:** `cursor/phase10-portfolio-packaging-018c`
 
-**PR:** (opened against Phase 9)
+**PR:** https://github.com/adammatar/speclens-ai/pull/10
 
 ### Architecture and implementation decisions
 
