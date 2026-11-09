@@ -9,9 +9,45 @@ make smoke
 cd apps/web && npm install && npm run dev
 ```
 
-- API: http://127.0.0.1:8000
-- Web (Vite): http://127.0.0.1:5173 (proxies `/api` → API)
+- API: http://127.0.0.1:8001 (mapped from container `:8000`; avoids Cursor binding `:8000`)
+- Web (Vite): http://127.0.0.1:5173 (proxies `/api` → API on `:8001`)
 - Bootstrap key: `speclens-local-dev-key` (rotate before any shared host)
+
+## Gemini free tier (cited chat)
+
+SpecLens supports Google AI Studio via the OpenAI-compatible Chat Completions API.
+
+1. Create an API key in [Google AI Studio](https://aistudio.google.com/apikey) — **keep it local; never paste it into chat or commit it**.
+2. In repo-root `.env` (copy from `.env.example` if needed):
+
+```bash
+OPENAI_API_KEY=your-gemini-key-here
+OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+GENERATION_BACKEND=openai_compat
+GENERATION_MODEL=gemini-3.8-flash
+# embeddings/extraction can stay stub for first demos
+EMBEDDING_BACKEND=stub
+EXTRACTION_BACKEND=stub
+```
+
+3. Confirm these four lines are **uncommented and set** (not left as comments / not `stub`):
+
+```bash
+grep -E '^(OPENAI_API_KEY|OPENAI_BASE_URL|GENERATION_BACKEND|GENERATION_MODEL)=' .env | sed 's/\(OPENAI_API_KEY=\).*/\1***/'
+```
+
+4. Recreate containers so they reload `.env`: `make down && make up && make smoke`
+5. Confirm Dashboard shows `stub/openai_compat/stub` (embedding / generation / extraction).
+6. Verify inside the API container:
+
+```bash
+docker compose --env-file .env -f infra/compose.yaml exec api printenv GENERATION_BACKEND
+curl -s http://127.0.0.1:8001/api/v1/meta
+```
+
+Should print `openai_compat`, and host `/meta` must match (not `stub`). If host still shows stub while the container is correct, something else is bound to the API port (historically Cursor on `:8000`).
+
+Rate limits apply on the free tier; if requests fail, wait and retry or check AI Studio quotas.
 
 ## Production-style Compose
 

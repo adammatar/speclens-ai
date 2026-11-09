@@ -1,5 +1,6 @@
-COMPOSE := docker compose -f infra/compose.yaml
-COMPOSE_PROD := docker compose -f infra/compose.prod.yaml
+# --env-file .env injects Gemini/OpenAI settings into Compose ${VAR} interpolation.
+COMPOSE := docker compose --env-file .env -f infra/compose.yaml
+COMPOSE_PROD := docker compose --env-file .env -f infra/compose.prod.yaml
 PYTHON ?= python3
 API_DIR := services/api
 
@@ -28,21 +29,29 @@ install-dev:
 	$(PYTHON) -m pip install -e "workers[dev]"
 
 up:
-	$(COMPOSE) up -d --build
+	@test -f .env || cp .env.example .env
+	$(COMPOSE) up -d --build --force-recreate
+	@echo "Backends from /meta (expect stub/openai_compat/stub when Gemini configured):"
+	@curl -sf http://127.0.0.1:8001/api/v1/meta 2>/dev/null | $(PYTHON) -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('embedding_backend')}/{d.get('generation_backend')}/{d.get('extraction_backend')}\")" || echo "(API not ready yet — run make smoke)"
 
 up-prod:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE_PROD) up -d --build
 
 down:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) down -v
 
 logs:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) logs -f
 
 build:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) build
 
 migrate:
+	@test -f .env || cp .env.example .env
 	$(COMPOSE) run --rm api alembic upgrade head
 
 test:
@@ -64,13 +73,13 @@ contracts:
 	cd packages/contracts && npm install && npm run generate
 
 smoke: up
-	@echo "Waiting for API..."
+	@echo "Waiting for API on :8001..."
 	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
-		if curl -sf http://127.0.0.1:8000/api/v1/health >/dev/null; then break; fi; \
+		if curl -sf http://127.0.0.1:8001/api/v1/health >/dev/null; then break; fi; \
 		sleep 2; \
 	done
-	curl -sf http://127.0.0.1:8000/api/v1/health | grep -q '"status":"ok"'
-	curl -sf http://127.0.0.1:8000/api/v1/ready | grep -q '"status":"ok"'
+	curl -sf http://127.0.0.1:8001/api/v1/health | grep -q '"status":"ok"'
+	curl -sf http://127.0.0.1:8001/api/v1/ready | grep -q '"status":"ok"'
 	@echo "Smoke checks passed"
 
 eval:

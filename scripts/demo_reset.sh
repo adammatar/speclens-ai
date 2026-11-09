@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-$ROOT/infra/compose.yaml}"
-API_URL="${API_URL:-http://127.0.0.1:8000}"
+API_URL="${API_URL:-http://127.0.0.1:8001}"
 AUTH_HEADER="${AUTH_HEADER:-Authorization: Bearer speclens-local-dev-key}"
 WORKSPACE_ID="00000000-0000-4000-8000-000000000001"
 FIXTURE="$ROOT/services/api/tests/fixtures/sample.md"

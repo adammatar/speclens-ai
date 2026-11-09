@@ -36,7 +36,8 @@ class SearchHit:
     lexical_rank_score: float | None = None
 
 
-def _excerpt(text: str, limit: int = 320) -> str:
+def _excerpt(text: str, limit: int = 1600) -> str:
+    """Keep enough mid-chunk facts for QA (birth dates, etc.) while bounding prompt size."""
     cleaned = " ".join(text.split())
     if len(cleaned) <= limit:
         return cleaned

@@ -31,8 +31,12 @@ services:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
+    # Defaults from .env.example; optional ../.env overrides (Gemini key, backends).
     env_file:
-      - ../.env.example
+      - path: ../.env.example
+        required: true
+      - path: ../.env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg://speclens:speclens_dev_password@postgres:5432/speclens
       REDIS_URL: redis://redis:6379/0
@@ -40,8 +44,9 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       STORAGE_LOCAL_ROOT: /data/storage
       SPECLENS_ENV: local
+    # Host 8001 avoids clashes with Cursor/other tools that often bind 127.0.0.1:8000.
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ../data/storage:/data/storage
     depends_on:
@@ -64,7 +69,10 @@ services:
       context: ..
       dockerfile: workers/Dockerfile
     env_file:
-      - ../.env.example
+      - path: ../.env.example
+        required: true
+      - path: ../.env
+        required: false
     environment:
       DATABASE_URL: postgresql+psycopg://speclens:speclens_dev_password@postgres:5432/speclens
       REDIS_URL: redis://redis:6379/0

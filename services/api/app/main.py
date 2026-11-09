@@ -26,8 +26,19 @@ from app.core.logging import configure_logging
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    import logging
+    import os
+
     settings = get_settings()
     configure_logging(settings.speclens_log_level)
+    logging.getLogger(__name__).info(
+        "speclens_backends embedding=%s generation=%s/%s extraction=%s env_generation=%s",
+        settings.embedding_backend,
+        settings.generation_backend,
+        settings.generation_model,
+        settings.extraction_backend,
+        os.environ.get("GENERATION_BACKEND"),
+    )
     yield
 
 

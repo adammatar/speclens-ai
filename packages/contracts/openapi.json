@@ -2197,6 +2197,28 @@
             },
             "type": "array",
             "title": "Citation Chunk Ids"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "generation_backend": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Backend"
           }
         },
         "type": "object",
