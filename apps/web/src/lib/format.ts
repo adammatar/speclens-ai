@@ -15,6 +15,11 @@ export function humanizeAnswer(content: string): string {
   return text.trim();
 }
 
+export function isDocReady(status: string | null | undefined): boolean {
+  const s = (status || "").toLowerCase();
+  return s === "ready" || s === "succeeded" || s === "completed";
+}
+
 export function statusLabel(status: string | null | undefined): string {
   switch ((status || "").toLowerCase()) {
     case "queued":

@@ -42,8 +42,8 @@ API docs (local): http://127.0.0.1:8001/docs — authenticated routes need `Auth
 
 | | |
 | --- | --- |
-| ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Dashboard](docs/portfolio/screenshots/02-dashboard.webp) |
-| ![Documents](docs/portfolio/screenshots/03-documents.webp) | |
+| ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Home](docs/portfolio/screenshots/02-home.webp) |
+| ![Documents](docs/portfolio/screenshots/03-documents.webp) | ![Chat](docs/portfolio/screenshots/05-chat.webp) |
 
 More media: [`docs/portfolio/`](docs/portfolio/).
 

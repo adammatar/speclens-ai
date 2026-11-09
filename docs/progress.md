@@ -23,4 +23,16 @@
 
 ### Explicit stop
 
-Awaiting PR review / merge.
+Merged to `main` (PR #15 / #16).
+
+---
+
+## Portfolio media refresh
+
+**Status:** Implemented (awaiting review)
+
+**Date:** 2026-11-09
+
+**Branch:** `cursor/portfolio-media-refresh-018c`
+
+Re-ran Playwright capture against the new Home / SpecLens AI / Hebrew UI. Also fixed Chat enablement when document status is `ready` (was incorrectly requiring `succeeded`).

@@ -10,6 +10,7 @@ import {
   uploadDocumentVersion,
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { isDocReady } from "../lib/format";
 import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { ChatDocSelection, DocumentSummary, MetaInfo } from "../lib/types";
 
@@ -54,7 +55,7 @@ export function HomePage() {
     if (!apiKey) return;
     let cancelled = false;
     (async () => {
-      const ready = docs.filter((d) => d.latest_status === "succeeded");
+      const ready = docs.filter((d) => isDocReady(d.latest_status));
       const rows: ChatDocSelection[] = [];
       for (const d of ready.slice(0, 40)) {
         try {
@@ -89,7 +90,7 @@ export function HomePage() {
   }
 
   async function selectSummaryForChat(doc: DocumentSummary) {
-    if (!apiKey || doc.latest_status !== "succeeded") return;
+    if (!apiKey || !isDocReady(doc.latest_status)) return;
     const detail = await getDocument(apiKey, doc.id);
     const latest = [...detail.versions].sort(
       (a, b) => b.version_number - a.version_number,

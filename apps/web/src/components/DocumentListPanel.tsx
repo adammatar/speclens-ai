@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type UIEvent } from "react";
 import { Link } from "react-router-dom";
-import { statusLabel } from "../lib/format";
+import { isDocReady, statusLabel } from "../lib/format";
 import { useLocale } from "../lib/i18n";
 import type { ChatDocSelection, DocumentSummary, MetaInfo } from "../lib/types";
 
@@ -123,7 +123,7 @@ export function DocumentListPanel({
           style={{ maxWidth: 140 }}
         >
           <option value="all">{t("home.allStatus")}</option>
-          <option value="succeeded">{t("home.statusReady")}</option>
+          <option value="ready">{t("home.statusReady")}</option>
           <option value="running">{t("home.statusReading")}</option>
           <option value="queued">{t("home.statusQueued")}</option>
           <option value="failed">{t("home.statusFailed")}</option>
@@ -133,12 +133,11 @@ export function DocumentListPanel({
       <div className="doc-scroll" onScroll={onScroll}>
         {shown.map((doc) => {
           const selected = selectedIds.has(doc.id);
-          const badgeClass =
-            doc.latest_status === "succeeded"
-              ? "ready"
-              : doc.latest_status === "failed"
-                ? "failed"
-                : "busy";
+          const badgeClass = isDocReady(doc.latest_status)
+            ? "ready"
+            : doc.latest_status === "failed"
+              ? "failed"
+              : "busy";
           return (
             <div key={doc.id} className="doc-row">
               <div className="doc-row-main">
@@ -153,9 +152,9 @@ export function DocumentListPanel({
                   type="button"
                   className={`btn sm ${selected ? "" : "secondary"}`}
                   onClick={() => onSelectForChat(doc)}
-                  disabled={doc.latest_status !== "succeeded"}
+                  disabled={!isDocReady(doc.latest_status)}
                   title={
-                    doc.latest_status !== "succeeded"
+                    !isDocReady(doc.latest_status)
                       ? t("home.waitReady")
                       : selected
                         ? t("home.inChat")

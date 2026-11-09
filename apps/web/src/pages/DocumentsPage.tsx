@@ -8,7 +8,7 @@ import {
   uploadDocumentVersion,
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { statusLabel } from "../lib/format";
+import { isDocReady, statusLabel } from "../lib/format";
 import { useLocale } from "../lib/i18n";
 import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { DocumentSummary } from "../lib/types";
@@ -129,7 +129,7 @@ export function DocumentsPage() {
           style={{ maxWidth: 160 }}
         >
           <option value="all">{t("home.allStatus")}</option>
-          <option value="succeeded">{t("home.statusReady")}</option>
+          <option value="ready">{t("home.statusReady")}</option>
           <option value="running">{t("home.statusReading")}</option>
           <option value="queued">{t("home.statusQueued")}</option>
           <option value="failed">{t("home.statusFailed")}</option>
@@ -138,12 +138,11 @@ export function DocumentsPage() {
 
       <div className="library-list">
         {filtered.map((doc) => {
-          const badgeClass =
-            doc.latest_status === "succeeded"
-              ? "ready"
-              : doc.latest_status === "failed"
-                ? "failed"
-                : "busy";
+          const badgeClass = isDocReady(doc.latest_status)
+            ? "ready"
+            : doc.latest_status === "failed"
+              ? "failed"
+              : "busy";
           return (
             <div key={doc.id} className="library-row">
               <div>
