@@ -43,8 +43,13 @@ export function SignInPage() {
           <label htmlFor="api-key">API key</label>
           <input
             id="api-key"
-            type="password"
+            type="text"
+            name="speclens-api-key"
             autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            data-1p-ignore="true"
+            data-lpignore="true"
             placeholder="Paste your workspace API key"
             value={key}
             onChange={(e) => setKey(e.target.value)}
