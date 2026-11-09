@@ -2,13 +2,14 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 1 delivers the engineering foundation only (API, worker, Postgres/pgvector, Redis, tooling, CI). No document AI features yet.
+Phase 2 adds asynchronous document ingestion (Markdown, DOCX, text PDF) on the Phase 1 foundation. Embeddings and cited QA come later.
 
 ## Stack
 
 - **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
-- **Worker:** Celery + Redis (persistent queue) with a no-op job
-- **Data:** Postgres 16 + pgvector; local filesystem storage interface stub
+- **Worker:** Celery + Redis persistent queue (`speclens.ingest_document`)
+- **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess
+- **Data:** Postgres 16 + pgvector; local filesystem object storage
 - **Web:** `apps/web` placeholder (Nuxt in a later phase)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
 - **Tooling:** Ruff, mypy, pytest, pre-commit, Make, GitHub Actions
@@ -27,6 +28,11 @@ API docs (local): http://127.0.0.1:8000/docs
 
 - `GET /api/v1/health` - liveness
 - `GET /api/v1/ready` - readiness (fails closed until Postgres is reachable)
+- `POST /api/v1/documents/upload` - accept Markdown/DOCX/PDF and enqueue ingest
+- `GET /api/v1/documents/jobs/{job_id}` - ingestion job status
+- `GET /api/v1/documents/versions/{id}/chunks` - provenance-preserving chunks
+- `POST /api/v1/documents/versions/{id}/reprocess` - retry ingest
+- `DELETE /api/v1/documents/{id}` - remove document, chunks, and stored bytes
 
 Migrations run automatically on API container start (`alembic upgrade head`). To run manually:
 

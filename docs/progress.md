@@ -4,104 +4,100 @@
 
 **Status:** Complete (approved)
 
-**Date:** 2026-11-08
-
-See `docs/decisions/0001-target-architecture.md`, `docs/architecture.md`, and `docs/security.md`.
+See `docs/decisions/0001-target-architecture.md`.
 
 ---
 
 ## Phase 1 - Engineering foundation
 
-**Status:** Complete and verified (CI green). Awaiting merge / explicit approval before Phase 2.
+**Status:** Complete (approved)
+
+PR: https://github.com/adammatar/speclens-ai/pull/1
+
+---
+
+## Phase 2 - Document ingestion
+
+**Status:** Complete and re-verified. Awaiting merge / explicit approval before Phase 3.
 
 **Date:** 2026-11-08 (re-verified same day)
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/1  
-**Branch:** `cursor/phase1-engineering-foundation-018c` @ `81fa337`
+**PR:** https://github.com/adammatar/speclens-ai/pull/2  
+**Branch:** `cursor/phase2-document-ingestion-018c` @ `4f978ab`
 
 ### Architecture and implementation decisions
 
-1. **Greenfield monorepo** (ADR 0001). Local Docs Viewer is UX/parsing reference only; no source copied.
-2. **FastAPI** under `services/api`: Pydantic Settings, structured JSON logging, `/api/v1/health` (liveness) and `/api/v1/ready` (DB readiness, 503 until reachable).
-3. **Postgres 16 + pgvector** in Compose; SQLAlchemy 2; Alembic creates `vector` extension and `health_probes`.
-4. **Celery + Redis** persistent queue; `speclens.noop` proves dequeue/ack.
-5. **Filesystem `StorageInterface` stub** with path-traversal guard (object store later).
-6. **OpenAPI -> TypeScript contracts stub** in `packages/contracts`.
-7. **Ruff, mypy, pytest, pre-commit**, Makefile, GitHub Actions (lint/typecheck/pytest + compose smoke).
-8. **No LangChain**; no document AI features yet; ASCII hyphens in prose.
+1. Schema: workspaces (default seed), documents, document_versions (SHA-256 dedupe), chunks, ingestion_jobs (`20261108_0002`).
+2. Upload returns 202; Celery `speclens.ingest_document` parses/chunks asynchronously.
+3. Parsers: Markdown, DOCX, text PDF; reject encrypted/scanned-only PDFs.
+4. Section-aware chunking with provenance (heading path, offsets, page).
+5. Delete removes DB rows + storage bytes; reprocess enqueues a new job.
+6. Worker image installs API package for shared pipeline; no Local Docs Viewer copy.
+7. No LangChain; no embeddings yet.
 
 ### Acceptance criteria (re-verified)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| Compose starts API, worker, Postgres (pgvector), Redis | Yes | Four services up; healthchecks green |
-| `GET /api/v1/health` returns ok | Yes | `{"status":"ok"}` |
-| `GET /api/v1/ready` fails closed until DB up, then ok | Yes | Unit 503 mock; live ready ok |
-| Alembic upgrade on empty DB | Yes | `20261108_0001`; `health_probes` + `vector` |
-| CI green; no committed secrets | Yes | PR 2/2 pass; empty `OPENAI_API_KEY` |
-| pytest health-route smoke | Yes | 6 passed |
-| No LangChain; no document AI | Yes | Non-goal only; no dependency |
-| ASCII hyphens | Yes | Em-dashes normalized |
+| Non-blocking upload | Yes | 202 + async job success |
+| Chunk provenance | Yes | heading_path + offsets asserted |
+| SHA-256 dedupe | Yes | HTTP 409 |
+| Reprocess / retry | Yes | reprocess job succeeded |
+| Delete removes chunks + bytes | Yes | 204; GET/chunks 404 |
+| Large synthetic Markdown | Yes | 100-section unit test |
+| Alembic head | Yes | `20261108_0002` |
+| Synthetic fixtures only | Yes | sample.md / in-memory DOCX/PDF |
 
-### Commands and test results (re-run)
+### Commands / results (re-run)
 
 ```text
-ruff check / format --check     -> pass
-mypy                            -> Success (17 files)
-pytest -v                       -> 6 passed
-compose up --build              -> api/worker/postgres/redis up
-curl /api/v1/health|/ready      -> ok
-alembic current                 -> 20261108_0001 (head)
-Celery noop                     -> ok
-gh pr checks                    -> both jobs pass
+ruff + mypy -> pass
+pytest -v   -> 15 passed
+compose e2e -> upload/reprocess/dedupe/delete ok
 ```
 
 **Failures:** none.
 
-### Changed files (63 vs `main`)
+### Changed files
 
-See PR diff. Major paths: `services/api/**`, `workers/**`, `infra/compose.yaml`, `packages/contracts/**`, `docs/**`, `.github/workflows/ci.yml`, `Makefile`, `.env.example`, `README.md`.
+35 files vs Phase 1 branch (ingestion package, documents routes, migration, worker Dockerfile/tasks, tests, CI, contracts, docs).
 
 ### Remaining risks
 
-- Published Postgres/Redis ports are for local DX only.
-- Some agent VMs need `bridge-nf-call-iptables=0` for Compose bridge traffic.
-- Contracts generator is a stub until schema growth.
-- Shared ingestion packaging across API/worker still TBD for Phase 2.
+- Heuristic PDF headings; whitespace token estimates; default workspace stub; published DB/Redis ports for local DX.
 
 ### Explicit stop
 
-**Phase 2 not started.** Wait for explicit approval before ingestion work.
+**Phase 3 not started.** Wait for approval before search/retrieval.
 
 ---
 
-## Phase 2 plan (proposed) - Document ingestion
+## Phase 3 plan (proposed) - Search and retrieval
 
 Do not execute until approved.
 
 ### Goals
 
-Upload and process DOCX, text-based PDF, and Markdown asynchronously; every chunk keeps full provenance.
+Batch-embed chunks into pgvector, add Postgres FTS + HNSW, expose hybrid RRF search with workspace filters and a debug endpoint. Keep retrieval independent of generation.
 
 ### Tasks
 
-1. Schema: documents, document_versions, chunks, job status; Alembic migration.
-2. Upload API: validation, SHA-256 dedupe, storage write, enqueue ingest job.
-3. Parsers for DOCX / text PDF / Markdown with section paths and offsets; reject encrypted/scanned-only PDFs.
-4. Hierarchical chunking (600-900 tokens, 80-120 overlap; heading path on every chunk).
-5. Celery ingest jobs with progress, failure, retry.
-6. Delete and reprocess workflows (remove bytes + chunks).
-7. Tests with synthetic fixtures only (no confidential customer docs).
-8. Refresh OpenAPI/contracts and CI.
+1. Embedder interface + settings (model/dims/batch); secrets server-side only.
+2. Migration: vector storage + FTS; HNSW index; filter indexes.
+3. Celery embed job after ingest/reprocess (idempotent).
+4. Search service: vector top-30 + lexical top-30 -> RRF -> top 12; optional flagged rerank later.
+5. APIs: `POST /api/v1/search` and search-debug with document/version/page/section/excerpt/scores.
+6. Tests for RRF + workspace isolation; compose smoke; OpenAPI/contracts refresh.
+7. Update progress/docs; no LangChain.
 
 ### Exit criteria
 
-- Large document processes without blocking the API
-- Every chunk traces to source
-- Duplicate uploads detected
-- Failed jobs retryable
-- Delete removes derived rows (embeddings arrive in Phase 3)
+- Multi-doc search within a workspace
+- No cross-workspace leakage
+- Provenance fields on every hit
+- Retrieval measurable without generation
+- CI green; no committed secrets
 
-### Non-goals for Phase 2
+### Non-goals
 
-- Embeddings/search, cited QA, requirement extraction, real auth, Electron, copying Local Docs Viewer source
+Cited QA (Phase 4), extraction (Phase 5), eval harness (Phase 7), real auth (Phase 8), Electron.

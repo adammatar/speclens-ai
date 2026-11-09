@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     storage_backend: Literal["filesystem"] = "filesystem"
     storage_local_root: str = "./data/storage"
+    max_upload_bytes: int = 50 * 1024 * 1024
 
     openai_api_key: str | None = None
     openai_base_url: str | None = None
