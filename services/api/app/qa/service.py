@@ -44,6 +44,8 @@ class AnswerTurn:
     generation_status: str
     retrieved_chunk_ids: list[str]
     citation_chunk_ids: list[str]
+    model: str | None = None
+    generation_backend: str | None = None
 
 
 def create_conversation(
@@ -189,19 +191,51 @@ def post_user_message(
             generation_status=assistant.generation_status or "",
             retrieved_chunk_ids=assistant.retrieved_chunk_ids or [],
             citation_chunk_ids=[],
+            model=assistant.model,
+            generation_backend=cfg.generation_backend,
         )
 
     generator = get_generator(cfg)
     assistant.generation_status = "running"
     session.commit()
 
-    result = generator.generate(
-        question=question,
-        hits=hits,
-        allowlisted_chunk_ids=allowlisted,
-        prompt_version=cfg.answering_prompt_version,
-        prior_messages=prior,
+    logger.info(
+        "qa_generation_start",
+        extra={
+            "conversation_id": str(conversation.id),
+            "generation_backend": cfg.generation_backend,
+            "generation_model": cfg.generation_model,
+            "generator_class": type(generator).__name__,
+        },
     )
+
+    try:
+        result = generator.generate(
+            question=question,
+            hits=hits,
+            allowlisted_chunk_ids=allowlisted,
+            prompt_version=cfg.answering_prompt_version,
+            prior_messages=prior,
+        )
+    except Exception as exc:  # noqa: BLE001 - surface provider failures to the client
+        assistant.status = MessageStatus.FAILED
+        assistant.generation_status = "failed"
+        assistant.content = f"Generation backend error ({cfg.generation_backend}): {exc}"
+        assistant.model = cfg.generation_model
+        assistant.latency_ms = int((time.perf_counter() - started) * 1000)
+        session.commit()
+        logger.exception(
+            "qa_generation_failed",
+            extra={
+                "conversation_id": str(conversation.id),
+                "generation_backend": cfg.generation_backend,
+                "generation_model": cfg.generation_model,
+            },
+        )
+        raise QAError(
+            f"Generation failed via {cfg.generation_backend}/{cfg.generation_model}: {exc}"
+        ) from exc
+
     safe_citations = filter_citations(result.citations, allowlisted)
 
     assistant.model = result.model
@@ -259,4 +293,6 @@ def post_user_message(
         generation_status=assistant.generation_status or "",
         retrieved_chunk_ids=assistant.retrieved_chunk_ids or [],
         citation_chunk_ids=[str(c.chunk_id) for c in safe_citations],
+        model=assistant.model,
+        generation_backend=cfg.generation_backend,
     )

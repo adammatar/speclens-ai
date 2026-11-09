@@ -175,6 +175,8 @@ def post_message_endpoint(
         generation_status=turn.generation_status,
         retrieved_chunk_ids=turn.retrieved_chunk_ids,
         citation_chunk_ids=turn.citation_chunk_ids,
+        model=turn.model,
+        generation_backend=turn.generation_backend,
     )
 
 

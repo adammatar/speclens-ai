@@ -33,6 +33,7 @@ export function ChatPage() {
     if (!apiKey || !id || !question.trim()) return;
     setBusy(true);
     setError(null);
+    setAnswer(null); // clear previous turn so stub answers cannot linger after Gemini errors
     try {
       const turn = await postMessage(apiKey, id, question.trim());
       setAnswer(turn);
@@ -93,6 +94,8 @@ export function ChatPage() {
           <p className="muted">
             {answer.status} · retrieval {answer.retrieval_status} · generation{" "}
             {answer.generation_status}
+            {answer.generation_backend ? ` · backend ${answer.generation_backend}` : ""}
+            {answer.model ? ` · model ${answer.model}` : ""}
           </p>
           <p className="prose">{answer.content}</p>
           <p className="muted">

@@ -103,8 +103,9 @@ class OpenAICompatGenerator:
                 {"role": "user", "content": json.dumps(user_payload)},
             ],
         }
+        url = f"{self._base_url}/chat/completions"
         request = urllib.request.Request(
-            f"{self._base_url}/chat/completions",
+            url,
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {self._api_key}",
@@ -115,6 +116,11 @@ class OpenAICompatGenerator:
         try:
             with urllib.request.urlopen(request, timeout=90) as response:  # noqa: S310
                 body = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:500]
+            raise RuntimeError(
+                f"openai_compat chat HTTP {exc.code} for model={self._model_name}: {detail}"
+            ) from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"openai_compat chat request failed: {exc}") from exc
 

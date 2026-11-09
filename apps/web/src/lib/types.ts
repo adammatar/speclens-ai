@@ -71,6 +71,8 @@ export type AnswerTurn = {
   generation_status: string;
   retrieved_chunk_ids: string[];
   citation_chunk_ids: string[];
+  model?: string | null;
+  generation_backend?: string | null;
 };
 
 export type Requirement = {

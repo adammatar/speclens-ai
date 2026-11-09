@@ -201,6 +201,8 @@ class AnswerTurnResponse(BaseModel):
     generation_status: str
     retrieved_chunk_ids: list[str]
     citation_chunk_ids: list[str]
+    model: str | None = None
+    generation_backend: str | None = None
 
 
 class StartExtractionResponse(BaseModel):
