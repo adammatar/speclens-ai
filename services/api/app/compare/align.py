@@ -121,9 +121,7 @@ def align_requirements(
                 continue
             sim = statement_similarity(base.statement, target.statement)
             category = classify_pair(base, target, similarity=max(sim, match_threshold))
-            pairs.append(
-                AlignmentPair(base=base, target=target, similarity=sim, category=category)
-            )
+            pairs.append(AlignmentPair(base=base, target=target, similarity=sim, category=category))
             used_target.add(id(target))
         else:
             remaining_base.append(base)

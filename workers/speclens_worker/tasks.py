@@ -48,7 +48,9 @@ def embed_document_version(self: Any, document_version_id: str) -> dict[str, obj
         session.close()
 
 
-@app.task(name="speclens.compare_document_versions", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
+@app.task(
+    name="speclens.compare_document_versions", bind=True, max_retries=3, default_retry_delay=5
+)  # type: ignore[untyped-decorator]
 def compare_document_versions(self: Any, job_id: str) -> dict[str, object]:
     """Compare extracted requirements across two document versions."""
     from app.compare.pipeline import CompareError, run_comparison_job
