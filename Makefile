@@ -30,7 +30,9 @@ install-dev:
 
 up:
 	@test -f .env || cp .env.example .env
-	$(COMPOSE) up -d --build
+	$(COMPOSE) up -d --build --force-recreate
+	@echo "Backends from /meta (expect stub/openai_compat/stub when Gemini configured):"
+	@curl -sf http://127.0.0.1:8000/api/v1/meta 2>/dev/null | $(PYTHON) -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('embedding_backend')}/{d.get('generation_backend')}/{d.get('extraction_backend')}\")" || echo "(API not ready yet — run make smoke)"
 
 up-prod:
 	@test -f .env || cp .env.example .env

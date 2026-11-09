@@ -1,10 +1,13 @@
 """Pydantic settings for SpecLens API."""
 
+from __future__ import annotations
+
+import os
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -14,7 +17,21 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        # Empty env vars should not override real Docker-injected values with blanks.
+        env_ignore_empty=True,
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # Process environment (Compose/Docker) must win over any cwd .env file.
+        return init_settings, env_settings, dotenv_settings, file_secret_settings
 
     speclens_env: Literal["local", "test", "staging", "production"] = "local"
     speclens_log_level: str = "INFO"
@@ -75,6 +92,23 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [part.strip() for part in self.cors_origins.split(",") if part.strip()]
+
+    @model_validator(mode="after")
+    def _prefer_process_env_backends(self) -> Settings:
+        """Compose injects backends via process env; never let a stray cwd .env win."""
+        embed = os.environ.get("EMBEDDING_BACKEND")
+        gen = os.environ.get("GENERATION_BACKEND")
+        extract = os.environ.get("EXTRACTION_BACKEND")
+        model = os.environ.get("GENERATION_MODEL")
+        if embed:
+            self.embedding_backend = embed  # type: ignore[assignment]
+        if gen:
+            self.generation_backend = gen  # type: ignore[assignment]
+        if extract:
+            self.extraction_backend = extract  # type: ignore[assignment]
+        if model:
+            self.generation_model = model
+        return self
 
 
 @lru_cache
