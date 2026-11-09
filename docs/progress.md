@@ -1,149 +1,169 @@
 # SpecLens AI - Progress
 
-## Phase 0-7
+## Phase 0-8
 
-**Status:** Complete (approved) - PRs #1-#7
+**Status:** Complete (approved) - PRs #1-#8
 
 ---
 
-## Phase 8 - Security, authentication and privacy
+## Phase 9 - Production UX and deployment
 
-**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 9)
+**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 10)
 
 **Date:** 2026-11-09
 
-**Branch:** `cursor/phase8-security-auth-018c`
+**Branch:** `cursor/phase9-production-ux-018c`
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/8
+**PR:** https://github.com/adammatar/speclens-ai/pull/9
 
 ### Architecture and implementation decisions
 
-1. **Identity model:** Alembic revision `20261108_0007` adds `users`, `workspace_memberships` (roles `owner` / `editor` / `viewer`), `api_keys` (SHA-256 `key_hash` only), and append-only `audit_events`. Migration seeds default-workspace owner `local-admin@speclens.local` plus local/CI bootstrap key `speclens-local-dev-key`.
-2. **Auth dependency:** `app.security.auth.require_api_key` accepts `Authorization: Bearer` or `X-API-Key`. Fail-closed when `AUTH_REQUIRED=true` (default). `/api/v1/health` and `/api/v1/ready` stay public. Unit tests may set `AUTH_REQUIRED=false` for DB-less cases.
-3. **Authorization:** `require_workspace_role` ranks roles and is applied on documents, search, conversations, requirements, and comparisons (viewer for reads; editor for mutations). Cross-workspace IDs return 403.
-4. **Hardening:** In-process rate limits on upload / QA / extract / compare (`RATE_LIMIT_PER_MINUTE`, default 120). Existing MIME/size allow-list retained. `RETENTION_DAYS` setting documents retention horizon (sweep job deferred).
-5. **Privacy:** `app.security.redaction` strips Bearer tokens, API-key fields, and document body fields from structured logs / audit detail. Sensitive route actions write `audit_events` without raw bodies.
-6. **Contracts / CI:** OpenAPI advertises `BearerAuth` + `ApiKeyHeader` on protected paths. Compose smoke asserts 401 without a key and uses the bootstrap Bearer for the full ingest → search → QA → extract → compare path.
+1. **Frontend:** React + Vite SPA in `apps/web` (explicitly not Nuxt). Consumes FastAPI over `/api/v1` with `Authorization: Bearer`; API key lives in `sessionStorage` only and is never baked into the production bundle.
+2. **UX surface:** Sign-in, workspace dashboard, document library/upload/detail (chunk viewer), cited chat, requirements, version compare, evaluation operator page, settings (retention/meta).
+3. **API additions for the SPA:** `GET /documents`, `GET /conversations`, public `GET /meta`; CORS via `CORS_ORIGINS`; nginx in prod proxies `/api` same-origin.
+4. **Deployment:** `infra/compose.prod.yaml` (api + worker + web); Postgres/Redis not published; HTTPS documented as edge termination; health/ready for monitoring.
+5. **Ops:** `docs/deploy.md` (deploy, migrate/rollback, backup/restore, monitoring); `scripts/demo_reset.sh` wipes default workspace and re-seeds unique synthetic Markdown (avoids colliding with pytest fixture SHA-256).
+6. **CI:** Web `npm ci && npm run build` in the lint job; Phase 9 PR CI green (lint/pytest, eval, compose smoke).
 
 ### Acceptance criteria (technical-plan exit criteria)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| Cross-workspace access denied | Yes | `test_cross_workspace_access_denied` (doc GET + search → 403); viewer upload → 403 |
-| Deleted docs absent from storage/chunks/embeddings | Yes | `test_bootstrap_key_upload_delete_clears_artifacts` (storage key gone; no chunks/embeddings rows) |
-| API keys never reach the frontend | Yes | `rg` over `apps/` + `packages/contracts/src` finds no key material; secrets stay in `.env.example` / server docs |
-| Logs hold IDs/metrics, not confidential content | Yes | `test_redaction_strips_secrets_and_bodies` + JSON formatter wiring in `app.core.logging` |
-| Security checklist documented | Yes | `docs/security.md` checklist + backup/restore + secret management |
+| Fresh production deployment from docs | Yes | `docs/deploy.md` + `make up-prod` / `infra/compose.prod.yaml` |
+| Demo resettable safely | Yes | `./scripts/demo_reset.sh` → ingest succeeded; documents list shows Demo Sample Spec |
+| Health checks and monitoring work | Yes | `/api/v1/health` + `/ready` OK locally; monitoring section in deploy docs |
+| Backup restoration tested | Yes | `pg_dump --schema-only` drill succeeded (1294 lines); restore steps documented in `docs/deploy.md` |
+| No confidential samples published | Yes | Synthetic fixtures only; binaries gitignored; bootstrap key absent from `apps/web/dist` |
 
-### Changed files (vs Phase 7)
+### Changed files (vs Phase 8)
 
 ```text
 .env.example
 .github/workflows/ci.yml
+Makefile
 README.md
+apps/web/.dockerignore
+apps/web/.gitignore
+apps/web/.oxlintrc.json
+apps/web/Dockerfile
+apps/web/README.md
+apps/web/index.html
+apps/web/nginx.conf
+apps/web/package-lock.json
+apps/web/package.json
+apps/web/public/favicon.svg
+apps/web/public/icons.svg
+apps/web/src/App.tsx
+apps/web/src/components/AppShell.tsx
+apps/web/src/components/RequireAuth.tsx
+apps/web/src/lib/api.ts
+apps/web/src/lib/auth.tsx
+apps/web/src/lib/types.ts
+apps/web/src/main.tsx
+apps/web/src/pages/ChatPage.tsx
+apps/web/src/pages/ComparePage.tsx
+apps/web/src/pages/DashboardPage.tsx
+apps/web/src/pages/DocumentDetailPage.tsx
+apps/web/src/pages/DocumentsPage.tsx
+apps/web/src/pages/EvaluationPage.tsx
+apps/web/src/pages/RequirementsPage.tsx
+apps/web/src/pages/SettingsPage.tsx
+apps/web/src/pages/SignInPage.tsx
+apps/web/src/pages/UploadPage.tsx
+apps/web/src/styles.css
+apps/web/tsconfig.app.json
+apps/web/tsconfig.json
+apps/web/tsconfig.node.json
+apps/web/vite.config.ts
+docs/architecture.md
+docs/deploy.md
 docs/progress.md
-docs/security.md
+infra/compose.prod.yaml
 packages/contracts/openapi.json
-pyproject.toml
-services/api/app/api/routes/comparisons.py
+packages/contracts/src/generated.ts
+scripts/demo_reset.sh
 services/api/app/api/routes/conversations.py
 services/api/app/api/routes/documents.py
-services/api/app/api/routes/requirements.py
-services/api/app/api/routes/search.py
+services/api/app/api/routes/meta.py
+services/api/app/api/schemas.py
 services/api/app/core/config.py
-services/api/app/core/logging.py
-services/api/app/db/models.py
+services/api/app/ingestion/service.py
 services/api/app/main.py
-services/api/app/security/__init__.py
-services/api/app/security/audit.py
-services/api/app/security/auth.py
-services/api/app/security/rate_limit.py
-services/api/app/security/redaction.py
-services/api/app/security/workspace.py
-services/api/migrations/versions/20261108_0007_security_auth.py
-services/api/tests/conftest.py
-services/api/tests/test_security_auth.py
+services/api/app/qa/service.py
+services/api/tests/test_ingestion_service.py
+services/api/tests/test_meta_and_list.py
 ```
+
+(Deleted placeholder: `apps/web/.gitkeep`)
 
 ### Commands / results (re-verification 2026-11-09)
 
 ```text
-ruff check services/api workers evals scripts     -> pass
-ruff format --check ...                           -> pass (112 files)
-python3 -m mypy                                   -> Success (71 source files)
-python3 -m pytest                                 -> 48 passed, 1 warning (Starlette TestClient deprecation)
-python -m evals.harness                           -> all gates passed
-python -m evals.harness --enforce                 -> all gates passed
-Local compose: health 200; upload without key 401; upload with Bearer accepted
-GitHub CI (PR #8): Lint/typecheck/pytest SUCCESS; Evaluation harness SUCCESS;
-                   Compose smoke was still running at re-verify time
+ruff check / format --check               -> pass (114 files)
+mypy                                      -> Success (72 source files)
+pytest                                    -> 50 passed, 1 warning
+apps/web npm ci && npm run build          -> pass
+bundle scan                               -> no speclens-local-dev-key in dist/
+demo_reset.sh                             -> ingest succeeded (unique seed SHA)
+pg_dump --schema-only                     -> 1294 lines written
+health / ready / meta                     -> ok
+GitHub CI (PR #9)                         -> lint/pytest, eval, compose smoke SUCCESS
 ```
 
-**Failures:** none locally. CI compose smoke was in progress at documentation time (lint + eval already green).
+**Failures during re-verify:** `test_upload_ingest_dedupe_delete_reprocess` initially failed because demo seed reused fixture SHA-256. Fixed by unique demo seed + leftover cleanup in the ingestion test; suite then green (50 passed).
 
 ### Explicit stop
 
-Phase 9 (production UX and deployment) is **not started**. Awaiting explicit approval.
+Phase 10 (portfolio packaging) is **not started**. Awaiting explicit approval.
 
 ### Remaining risks
 
-1. Bootstrap API key is a documented local/CI secret - rotate/disable before any shared or hosted deploy.
-2. Rate limiter is in-process per API replica (not Redis-backed); multi-replica hosted deploys need a shared limiter.
-3. `RETENTION_DAYS` is configuration + docs only; no scheduled purge job yet (complete delete API covers explicit wipe).
-4. Auth is API-key based (no browser session/OIDC yet) - Phase 9 frontend must avoid embedding secrets in the bundle.
+1. React pages for chat/requirements/compare are thin operator slices (UUID fields in places) — enough for Phase 9 exit, not polished product UX.
+2. Prod Compose still defaults to example passwords unless env is overridden.
+3. Full DB+object-store restore was documented and schema dump drilled; a full volume restore dry-run on a scratch stack remains operator homework.
+4. Sentry DSN is env-reserved only (no SDK wired yet).
 
 ---
 
-## Phase 9 plan (proposed) - Production UX and deployment
+## Phase 10 plan (proposed) - Portfolio packaging
 
 **Do not execute until explicitly approved.**
 
 ### Goal
 
-Deliver a usable Nuxt frontend against the authenticated Phase 8 API, plus a reproducible production-style deployment path (images, managed data plane, HTTPS, monitoring, backups) and a resettable public demo on non-confidential documents.
+Present SpecLens as a finished portfolio piece: architecture visuals, product media, a short demo narrative, and concise technical/eval/security write-ups — without shipping confidential samples.
 
 ### Scope (in)
 
-1. **Frontend (`apps/web` Nuxt)**
-   - Sign-in that stores the API key/session client-side only (never bake OpenAI or bootstrap secrets into the bundle).
-   - Workspace dashboard, document library, upload + job progress, document viewer.
-   - Cited AI chat, requirements workspace, version comparison, evaluation dashboard, settings/retention controls.
-   - Consume `packages/contracts` OpenAPI types; send `Authorization: Bearer` on all protected calls.
-2. **Deployment**
-   - Production Docker images for API + worker (+ web).
-   - Managed PostgreSQL with pgvector, Redis, object storage.
-   - HTTPS termination, health/ready probes, basic monitoring and error tracking.
-3. **Ops**
-   - Migration + rollback runbook.
-   - Backup and restore drill (DB dump + object store) documented and exercised once.
-   - Public demo workspace with non-confidential corpus and a safe reset script.
+1. **Architecture diagram** — system + data-flow (API, workers, Postgres/pgvector, Redis, object store, React SPA).
+2. **Product screenshots** — sign-in, library, cited chat, requirements, compare (from the React UI).
+3. **Demo video (~2 min)** — upload → ask with citations → extract → compare → reset.
+4. **Write-up** — public technical narrative; evaluation results; performance notes; security summary; individual contribution statement.
+5. **README polish** — setup (`make up` / `make web` / `make up-prod`), architecture pointer, demo reset, non-confidential corpus note.
 
 ### Non-goals
 
-- Enterprise SSO/SCIM / customer-managed KMS
-- Electron desktop packaging
-- Phase 10 portfolio packaging (screenshots, demo video, write-up)
+- New product features / SSO / Electron
+- Replacing stub backends with paid OpenAI in the public demo (optional footnote only)
 
 ### Exit criteria to verify before stop
 
 | Criterion | How we will prove it |
 | --- | --- |
-| Fresh production deployment works from documented instructions | Follow deploy docs on a clean environment / Compose prod profile |
-| Demo can be reset safely | Scripted wipe of demo workspace + re-seed; smoke after reset |
-| Health checks and monitoring work | Probes green; at least one metrics/error sink wired |
-| Backup restoration tested | Restore dump + storage into a scratch stack; ready + search smoke |
-| No confidential sample files published | Demo corpus review; gitignore / publish checklist |
+| Architecture diagram published | Asset linked from README / `docs/` |
+| Screenshots + demo video available | Artifacts linked from README |
+| Technical write-up + eval/perf/security summary | Docs pages |
+| Individual contribution statement | README or write-up section |
+| No confidential samples | Corpus + gitignore review |
 
 ### Implementation sketch
 
-1. Branch `cursor/phase9-production-ux-018c` from Phase 8.
-2. Scaffold/expand Nuxt app; thin vertical slices per page wired to real API with auth header.
-3. Prod Compose/image targets, deploy + backup/restore docs, demo reset script.
-4. Tests (frontend unit/e2e smoke where practical) + CI; update `docs/progress.md`; open PR; **stop for Phase 10 approval**.
+1. Branch `cursor/phase10-portfolio-packaging-018c` from Phase 9.
+2. Capture UI media; author write-up and diagrams; polish README.
+3. Update `docs/progress.md`; open PR; **stop** (final portfolio handoff).
 
-### Risks for Phase 9
+### Risks for Phase 10
 
-- Frontend scope creep across many pages - prefer thin slices over polish-first.
-- Accidental secret leakage if demo/prod envs reuse the local bootstrap key.
-- Backup consistency between Postgres and object storage during demo reset.
-- Auth UX gap (raw API key in browser) until optional OIDC lands later.
+- Demo video scope creep vs a tight 2-minute path.
+- Accidentally including bootstrap secrets or private docs in published media.
+- Over-claiming stub-backend eval metrics as production LLM quality.

@@ -78,6 +78,15 @@ def test_upload_ingest_dedupe_delete_reprocess(
 ) -> None:
     storage = FilesystemStorage(settings.storage_local_root)
     data = (FIXTURES / "sample.md").read_bytes()
+    # Clear any leftover same-hash rows from local demo_reset / prior runs.
+    digest = sha256_hex(data)
+    leftover_versions = db_session.scalars(
+        select(DocumentVersion).where(DocumentVersion.sha256 == digest)
+    ).all()
+    for version in leftover_versions:
+        document = db_session.get(Document, version.document_id)
+        if document is not None:
+            delete_document(db_session, document.id, settings=settings, storage=storage)
 
     result = upload_document(
         db_session,

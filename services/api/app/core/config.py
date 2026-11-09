@@ -62,10 +62,18 @@ class Settings(BaseSettings):
     auth_required: bool = True
     rate_limit_per_minute: int = 120
     retention_days: int = 365
+    # Comma-separated browser origins for the React SPA (local Vite + prod web).
+    cors_origins: str = (
+        "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:3000,http://localhost:3000"
+    )
 
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [part.strip() for part in self.cors_origins.split(",") if part.strip()]
 
 
 @lru_cache

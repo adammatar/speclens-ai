@@ -294,6 +294,28 @@ def get_document(session: Session, document_id: uuid.UUID) -> Document:
     return document
 
 
+def list_documents(
+    session: Session,
+    *,
+    workspace_id: uuid.UUID,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[Document]:
+    """List documents in a workspace (newest first)."""
+    from sqlalchemy.orm import selectinload
+
+    return list(
+        session.scalars(
+            select(Document)
+            .where(Document.workspace_id == workspace_id)
+            .options(selectinload(Document.versions))
+            .order_by(Document.updated_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+
+
 def count_chunks(session: Session, document_version_id: uuid.UUID) -> int:
     from app.db.models import Chunk
 

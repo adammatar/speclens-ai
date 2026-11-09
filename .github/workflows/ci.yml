@@ -46,6 +46,12 @@ jobs:
           npm run generate
           git diff --exit-code -- openapi.json src/generated.ts
 
+      - name: Web build (React + Vite)
+        run: |
+          cd apps/web
+          npm ci
+          npm run build
+
   eval:
     name: Evaluation harness
     runs-on: ubuntu-latest

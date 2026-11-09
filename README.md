@@ -2,7 +2,7 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 8 adds API-key auth, workspace RBAC, rate limits, audit events, and log redaction. Local/CI bootstrap key: `speclens-local-dev-key`.
+Phase 9 adds a **React + Vite** web UI, production-style Compose, deploy/backup docs, and a demo reset script. Local/CI bootstrap key: `speclens-local-dev-key`.
 
 ## Stack
 
@@ -16,7 +16,7 @@ Phase 8 adds API-key auth, workspace RBAC, rate limits, audit events, and log re
 - **Compare:** requirement alignment, change categories, confirm/reject, Jira/test/file links
 - **Eval:** JSONL datasets, offline graders, baseline diff, advisory CI thresholds
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
-- **Web:** `apps/web` placeholder (Nuxt in Phase 9)
+- **Web:** React + Vite SPA in `apps/web` (API key in sessionStorage only)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
 - **Tooling:** Ruff, mypy, pytest, pre-commit, Make, GitHub Actions
 
@@ -28,11 +28,14 @@ Python **>= 3.12**. Node.js **>= 22** (contracts package).
 cp .env.example .env
 make up          # builds and starts postgres, redis, api, worker
 make smoke       # health + ready checks
+make web         # React UI at http://127.0.0.1:5173
 ```
+
+Production-style stack (API + worker + web on :8080): `make up-prod`. Deploy/backup/demo reset: `docs/deploy.md`.
 
 API docs (local): http://127.0.0.1:8000/docs
 
-Authenticated routes require `Authorization: Bearer speclens-local-dev-key` (or `X-API-Key`). Health/ready stay public.
+Authenticated routes require `Authorization: Bearer speclens-local-dev-key` (or `X-API-Key`). Health/ready/meta stay public.
 
 - `GET /api/v1/health` - liveness
 - `GET /api/v1/ready` - readiness (fails closed until Postgres is reachable)
@@ -92,6 +95,10 @@ make contracts
 | `make contracts` | Export OpenAPI and generate TS stubs |
 | `make smoke` | Compose up + health/ready curl checks |
 | `make eval` | Offline eval harness → `artifacts/eval/report.{json,html}` |
+| `make web` | React + Vite dev server |
+| `make web-build` | Production web build |
+| `make up-prod` | Prod-style Compose including web |
+| `make demo-reset` | Reset default workspace + re-seed sample |
 
 ## Repository layout
 

@@ -7,10 +7,19 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
 from app import __version__
-from app.api.routes import comparisons, conversations, documents, health, requirements, search
+from app.api.routes import (
+    comparisons,
+    conversations,
+    documents,
+    health,
+    meta,
+    requirements,
+    search,
+)
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 
@@ -32,7 +41,15 @@ def create_app() -> FastAPI:
         docs_url="/docs" if settings.speclens_env != "production" else None,
         redoc_url="/redoc" if settings.speclens_env != "production" else None,
     )
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     application.include_router(health.router, prefix="/api/v1")
+    application.include_router(meta.router, prefix="/api/v1")
     application.include_router(documents.router, prefix="/api/v1")
     application.include_router(search.router, prefix="/api/v1")
     application.include_router(conversations.router, prefix="/api/v1")
@@ -60,8 +77,7 @@ def create_app() -> FastAPI:
             "name": "X-API-Key",
             "description": "Alternate API key header",
         }
-        # Apply to all paths except public health/ready probes.
-        public = {"/api/v1/health", "/api/v1/ready"}
+        public = {"/api/v1/health", "/api/v1/ready", "/api/v1/meta"}
         for path, methods in schema.get("paths", {}).items():
             if path in public:
                 continue
