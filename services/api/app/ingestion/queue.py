@@ -59,3 +59,17 @@ def enqueue_embed_document_version(document_version_id: uuid.UUID) -> str:
         },
     )
     return task_id
+
+
+def enqueue_extraction_job(job_id: uuid.UUID) -> str:
+    """Publish speclens.extract_requirements for a queued extraction job."""
+    async_result = get_celery_client().send_task(
+        "speclens.extract_requirements",
+        args=[str(job_id)],
+    )
+    task_id = str(async_result.id)
+    logger.info(
+        "extraction_job_enqueued",
+        extra={"job_id": str(job_id), "celery_task_id": task_id},
+    )
+    return task_id

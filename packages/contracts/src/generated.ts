@@ -9,10 +9,15 @@ export type ApiPath =
   | "/api/v1/documents/jobs/{job_id}"
   | "/api/v1/documents/upload"
   | "/api/v1/documents/versions/{document_version_id}/chunks"
+  | "/api/v1/documents/versions/{document_version_id}/extractions"
   | "/api/v1/documents/versions/{document_version_id}/reprocess"
   | "/api/v1/documents/{document_id}"
+  | "/api/v1/extractions/{job_id}"
   | "/api/v1/health"
   | "/api/v1/ready"
+  | "/api/v1/requirements"
+  | "/api/v1/requirements/export"
+  | "/api/v1/requirements/{requirement_id}"
   | "/api/v1/search"
   | "/api/v1/search/debug";
 
@@ -32,10 +37,15 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/documents/jobs/{job_id}",
   "/api/v1/documents/upload",
   "/api/v1/documents/versions/{document_version_id}/chunks",
+  "/api/v1/documents/versions/{document_version_id}/extractions",
   "/api/v1/documents/versions/{document_version_id}/reprocess",
   "/api/v1/documents/{document_id}",
+  "/api/v1/extractions/{job_id}",
   "/api/v1/health",
   "/api/v1/ready",
+  "/api/v1/requirements",
+  "/api/v1/requirements/export",
+  "/api/v1/requirements/{requirement_id}",
   "/api/v1/search",
   "/api/v1/search/debug",
 ];

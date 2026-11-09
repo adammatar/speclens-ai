@@ -2,15 +2,16 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 4 adds cited question answering over hybrid retrieval (stub LLM by default; optional OpenAI Responses API).
+Phase 5 adds structured requirement extraction with review states, provenance, and CSV/JSON export (stub extractor by default; optional OpenAI Structured Outputs).
 
 ## Stack
 
 - **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
-- **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`)
+- **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`, `speclens.extract_requirements`)
 - **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess
 - **Retrieval:** stub/OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF search
 - **QA:** conversations/messages/citations; stub or OpenAI Responses generator; citation allow-lists
+- **Extraction:** section jobs, Pydantic schema validation, review states, CSV/JSON export
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
 - **Web:** `apps/web` placeholder (Nuxt in a later phase)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
@@ -40,6 +41,11 @@ API docs (local): http://127.0.0.1:8000/docs
 - `POST /api/v1/conversations` - create a cited-QA thread
 - `POST /api/v1/conversations/{id}/messages` - ask a question (`stream=true` for SSE)
 - `GET /api/v1/conversations/{id}` - messages, citations, retrieval/generation status
+- `POST /api/v1/documents/versions/{id}/extractions` - start requirement extraction
+- `GET /api/v1/extractions/{job_id}` - extraction job progress (resumable cursor)
+- `GET /api/v1/requirements` - list/filter requirements
+- `PATCH /api/v1/requirements/{id}` - edit / set review state (preserves original payload)
+- `GET /api/v1/requirements/export` - CSV or JSON export
 
 Migrations run automatically on API container start (`alembic upgrade head`). To run manually:
 
