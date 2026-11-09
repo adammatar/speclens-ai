@@ -89,7 +89,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Start stack
-        run: docker compose -f infra/compose.yaml up -d --build
+        run: |
+          # Compose prefers optional ../.env; ensure a local file exists in CI.
+          test -f .env || cp .env.example .env
+          docker compose -f infra/compose.yaml up -d --build
 
       - name: Wait for health and ready
         run: |
