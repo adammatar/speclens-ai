@@ -108,6 +108,19 @@ jobs:
           CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8000/api/v1/documents/upload \
             -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown")
           test "$CODE" = "409"
+          for i in $(seq 1 40); do
+            COUNT=$(docker compose -f infra/compose.yaml exec -T postgres \
+              psql -U speclens -d speclens -Atc "select count(*) from chunk_embeddings where document_version_id='${VER_ID}'")
+            if [ "$COUNT" -gt 0 ]; then
+              break
+            fi
+            sleep 1
+          done
+          test "$COUNT" -gt 0
+          SEARCH=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/search \
+            -H 'Content-Type: application/json' \
+            -d "{\"query\":\"hierarchical chunking\",\"document_version_ids\":[\"${VER_ID}\"],\"debug\":true}")
+          python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['results']; r=d['results'][0]; assert r['excerpt']; assert r['document_version_id']" "$SEARCH"
 
       - name: Tear down
         if: always()

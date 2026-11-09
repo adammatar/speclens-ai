@@ -83,3 +83,35 @@ class ReprocessResponse(BaseModel):
     document_version_id: uuid.UUID
     job_id: uuid.UUID
     status: str = "queued"
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=1)
+    workspace_id: uuid.UUID = Field(default=uuid.UUID("00000000-0000-4000-8000-000000000001"))
+    document_ids: list[uuid.UUID] | None = None
+    document_version_ids: list[uuid.UUID] | None = None
+    limit: int = Field(default=12, ge=1, le=50)
+    debug: bool = False
+
+
+class SearchHitResponse(BaseModel):
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    document_version_id: uuid.UUID
+    workspace_id: uuid.UUID
+    heading_path: str
+    page_number: int | None
+    excerpt: str
+    start_offset: int
+    end_offset: int
+    rrf_score: float
+    vector_rank: int | None = None
+    lexical_rank: int | None = None
+    vector_distance: float | None = None
+    lexical_rank_score: float | None = None
+
+
+class SearchResponse(BaseModel):
+    query: str
+    workspace_id: uuid.UUID
+    results: list[SearchHitResponse]

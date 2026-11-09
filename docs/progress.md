@@ -4,100 +4,99 @@
 
 **Status:** Complete (approved)
 
-See `docs/decisions/0001-target-architecture.md`.
-
 ---
 
 ## Phase 1 - Engineering foundation
 
-**Status:** Complete (approved)
-
-PR: https://github.com/adammatar/speclens-ai/pull/1
+**Status:** Complete (approved) - https://github.com/adammatar/speclens-ai/pull/1
 
 ---
 
 ## Phase 2 - Document ingestion
 
-**Status:** Complete and re-verified. Awaiting merge / explicit approval before Phase 3.
+**Status:** Complete (approved) - https://github.com/adammatar/speclens-ai/pull/2
+
+---
+
+## Phase 3 - Search and retrieval
+
+**Status:** Complete and re-verified; CI green. Awaiting merge / explicit approval before Phase 4.
 
 **Date:** 2026-11-08 (re-verified same day)
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/2  
-**Branch:** `cursor/phase2-document-ingestion-018c` @ `4f978ab`
+**PR:** https://github.com/adammatar/speclens-ai/pull/3  
+**Branch:** `cursor/phase3-search-retrieval-018c` @ `1e33bf8`
 
 ### Architecture and implementation decisions
 
-1. Schema: workspaces (default seed), documents, document_versions (SHA-256 dedupe), chunks, ingestion_jobs (`20261108_0002`).
-2. Upload returns 202; Celery `speclens.ingest_document` parses/chunks asynchronously.
-3. Parsers: Markdown, DOCX, text PDF; reject encrypted/scanned-only PDFs.
-4. Section-aware chunking with provenance (heading path, offsets, page).
-5. Delete removes DB rows + storage bytes; reprocess enqueues a new job.
-6. Worker image installs API package for shared pipeline; no Local Docs Viewer copy.
-7. No LangChain; no embeddings yet.
+1. Stub embedder default (256-d); optional OpenAI backend when keyed.
+2. Migration `20261108_0003`: FTS `search_tsv` + GIN; `chunk_embeddings` + HNSW.
+3. Celery embed chained after successful ingest.
+4. Hybrid search: vector + lexical -> RRF; workspace fail-closed.
+5. `POST /api/v1/search` and `/search/debug` with provenance fields.
+6. No LangChain; rerank flag off.
 
 ### Acceptance criteria (re-verified)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| Non-blocking upload | Yes | 202 + async job success |
-| Chunk provenance | Yes | heading_path + offsets asserted |
-| SHA-256 dedupe | Yes | HTTP 409 |
-| Reprocess / retry | Yes | reprocess job succeeded |
-| Delete removes chunks + bytes | Yes | 204; GET/chunks 404 |
-| Large synthetic Markdown | Yes | 100-section unit test |
-| Alembic head | Yes | `20261108_0002` |
-| Synthetic fixtures only | Yes | sample.md / in-memory DOCX/PDF |
+| Workspace-scoped hybrid search | Yes | Compose search hit with provenance |
+| No cross-workspace leakage | Yes | unknown WS HTTP 400 |
+| Provenance on hits | Yes | ids, heading_path, excerpt, offsets |
+| Retrieval without generation | Yes | stub + FTS/RRF |
+| Embed after ingest | Yes | embeddings count > 0 |
+| Tests / CI | Yes | pytest 19 passed; PR CI 2/2 green |
 
 ### Commands / results (re-run)
 
 ```text
 ruff + mypy -> pass
-pytest -v   -> 15 passed
-compose e2e -> upload/reprocess/dedupe/delete ok
+pytest -v   -> 19 passed
+alembic     -> 20261108_0003
+compose     -> upload/embed/search/debug ok; unknown WS 400
 ```
 
 **Failures:** none.
 
 ### Changed files
 
-35 files vs Phase 1 branch (ingestion package, documents routes, migration, worker Dockerfile/tasks, tests, CI, contracts, docs).
+28 files vs Phase 2 (embeddings, retrieval, search routes, migration, tests, CI, contracts, docs).
 
 ### Remaining risks
 
-- Heuristic PDF headings; whitespace token estimates; default workspace stub; published DB/Redis ports for local DX.
+Stub vs production embed quality; fixed 256-d schema; English FTS only; rerank not implemented.
 
 ### Explicit stop
 
-**Phase 3 not started.** Wait for approval before search/retrieval.
+**Phase 4 not started.** Wait for approval before cited QA.
 
 ---
 
-## Phase 3 plan (proposed) - Search and retrieval
+## Phase 4 plan (proposed) - Cited question answering
 
 Do not execute until approved.
 
 ### Goals
 
-Batch-embed chunks into pgvector, add Postgres FTS + HNSW, expose hybrid RRF search with workspace filters and a debug endpoint. Keep retrieval independent of generation.
+Streaming citation-grounded QA over hybrid retrieval, with conversations, insufficient-evidence behavior, and prompt-injection defenses. Documents are untrusted data.
 
 ### Tasks
 
-1. Embedder interface + settings (model/dims/batch); secrets server-side only.
-2. Migration: vector storage + FTS; HNSW index; filter indexes.
-3. Celery embed job after ingest/reprocess (idempotent).
-4. Search service: vector top-30 + lexical top-30 -> RRF -> top 12; optional flagged rerank later.
-5. APIs: `POST /api/v1/search` and search-debug with document/version/page/section/excerpt/scores.
-6. Tests for RRF + workspace isolation; compose smoke; OpenAPI/contracts refresh.
-7. Update progress/docs; no LangChain.
+1. Conversations/messages/citations schema + migration
+2. Versioned answering prompts under `prompts/answering/`
+3. Context assembly from Phase 3 search with token budget
+4. Streaming Responses API endpoint; citations allow-listed to retrieved chunk ids; stub LLM for tests
+5. Insufficient-evidence path; follow-up turns
+6. Persist model/prompt_version/chunk ids/latency/tokens; no raw doc bodies in logs
+7. Prompt-injection + citation allow-list tests; OpenAPI/CI updates
 
 ### Exit criteria
 
-- Multi-doc search within a workspace
-- No cross-workspace leakage
-- Provenance fields on every hit
-- Retrieval measurable without generation
+- Citations only to retrieved chunks
+- Explicit insufficient-evidence when unsupported
+- Retrieval/generation status exposed via API
 - CI green; no committed secrets
 
 ### Non-goals
 
-Cited QA (Phase 4), extraction (Phase 5), eval harness (Phase 7), real auth (Phase 8), Electron.
+Extraction, version compare, eval CI gates, real auth, Electron.

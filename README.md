@@ -2,13 +2,14 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 2 adds asynchronous document ingestion (Markdown, DOCX, text PDF) on the Phase 1 foundation. Embeddings and cited QA come later.
+Phase 3 adds hybrid search (stub/OpenAI embeddings + Postgres FTS + RRF) on ingested chunks. Cited QA comes later.
 
 ## Stack
 
 - **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
-- **Worker:** Celery + Redis persistent queue (`speclens.ingest_document`)
+- **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`)
 - **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess
+- **Retrieval:** stub (default) or OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF search
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
 - **Web:** `apps/web` placeholder (Nuxt in a later phase)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
@@ -33,6 +34,8 @@ API docs (local): http://127.0.0.1:8000/docs
 - `GET /api/v1/documents/versions/{id}/chunks` - provenance-preserving chunks
 - `POST /api/v1/documents/versions/{id}/reprocess` - retry ingest
 - `DELETE /api/v1/documents/{id}` - remove document, chunks, and stored bytes
+- `POST /api/v1/search` - hybrid vector + lexical search with RRF
+- `POST /api/v1/search/debug` - same results with per-channel ranks
 
 Migrations run automatically on API container start (`alembic upgrade head`). To run manually:
 

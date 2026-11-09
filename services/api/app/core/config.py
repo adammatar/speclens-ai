@@ -38,6 +38,16 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_base_url: str | None = None
 
+    embedding_backend: Literal["stub", "openai"] = "stub"
+    embedding_model: str = "speclens-stub-v1"
+    embedding_dims: int = 256
+    embedding_batch_size: int = 64
+    search_vector_limit: int = 30
+    search_lexical_limit: int = 30
+    search_rrf_k: int = 60
+    search_result_limit: int = 12
+    search_rerank_enabled: bool = False
+
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"
