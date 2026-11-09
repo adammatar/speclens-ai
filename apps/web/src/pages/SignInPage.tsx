@@ -36,11 +36,11 @@ export function SignInPage() {
           Spec<span>Lens</span>
         </div>
         <p className="lede">
-          Read technical specs with cited answers, structured requirements, and
-          version diffs — keyed to your workspace.
+          Upload specs, chat in plain language, and keep versions side by side —
+          built for clear answers with evidence.
         </p>
         <div className="field">
-          <label htmlFor="api-key">API key</label>
+          <label htmlFor="api-key">Workspace API key</label>
           <input
             id="api-key"
             type="text"
@@ -50,18 +50,17 @@ export function SignInPage() {
             spellCheck={false}
             data-1p-ignore="true"
             data-lpignore="true"
-            placeholder="Paste your workspace API key"
+            placeholder="Paste your key"
             value={key}
             onChange={(e) => setKey(e.target.value)}
           />
         </div>
         {error ? <div className="error">{error}</div> : null}
-        <button className="btn amber" type="submit" disabled={busy}>
-          {busy ? "Checking…" : "Enter workspace"}
+        <button className="btn" type="submit" disabled={busy}>
+          {busy ? "Checking…" : "Continue"}
         </button>
-        <p className="muted">
-          Local bootstrap key stays in sessionStorage only — never bundled into
-          the build.
+        <p className="muted" style={{ fontSize: "0.82rem" }}>
+          The key stays in this browser session only.
         </p>
       </form>
     </div>

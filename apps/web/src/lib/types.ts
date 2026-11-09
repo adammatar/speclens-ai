@@ -61,6 +61,35 @@ export type ConversationSummary = {
   updated_at: string;
 };
 
+export type ChatMessage = {
+  id: string;
+  role: string;
+  content: string;
+  status: string;
+  model?: string | null;
+  retrieval_status?: string | null;
+  generation_status?: string | null;
+  citations?: Array<{ chunk_id: string; claim_index: number; source_quote: string | null }>;
+  created_at: string;
+};
+
+export type ConversationDetail = {
+  id: string;
+  workspace_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
+};
+
+/** Document selected for scoped chat (latest ready version). */
+export type ChatDocSelection = {
+  documentId: string;
+  title: string;
+  versionId: string;
+  versionNumber: number;
+};
+
 export type AnswerTurn = {
   conversation_id: string;
   user_message_id: string;
