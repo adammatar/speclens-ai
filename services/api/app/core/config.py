@@ -58,7 +58,11 @@ class Settings(BaseSettings):
     embedding_backend: Literal["stub", "openai"] = "stub"
     embedding_model: str = "speclens-stub-v1"
     embedding_dims: int = 256
+    # When true, send dimensions= to /embeddings (OpenAI text-embedding-3*). Gemini usually false.
+    embedding_send_dimensions: bool = False
     embedding_batch_size: int = 64
+    # Postgres FTS config: simple preserves non-English tokens (Hebrew, etc.).
+    search_fts_config: str = "simple"
     search_vector_limit: int = 30
     search_lexical_limit: int = 30
     search_rrf_k: int = 60
@@ -73,7 +77,7 @@ class Settings(BaseSettings):
     qa_min_rrf_score: float = 0.01
     qa_max_context_chunks: int = 8
 
-    extraction_backend: Literal["stub", "openai"] = "stub"
+    extraction_backend: Literal["stub", "openai", "openai_compat"] = "stub"
     extraction_model: str = "speclens-stub-extract-v1"
     extraction_prompt_version: str = "extraction-v1"
 

@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { useLocale } from "../lib/i18n";
 
 export function SignInPage() {
   const { apiKey, signIn } = useAuth();
+  const { t, toggleLocale } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const [key, setKey] = useState("");
@@ -23,7 +25,7 @@ export function SignInPage() {
       await signIn(key);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      setError(err instanceof Error ? err.message : t("signin.failed"));
     } finally {
       setBusy(false);
     }
@@ -32,15 +34,22 @@ export function SignInPage() {
   return (
     <div className="sign-in">
       <form className="sign-panel stack" onSubmit={onSubmit}>
-        <div className="brand-mark">
-          Spec<span>Lens</span>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="brand-mark">
+            Spec<span>Lens</span>
+          </div>
+          <button
+            type="button"
+            className="lang-toggle"
+            onClick={toggleLocale}
+            title={t("lang.toggleTitle")}
+          >
+            {t("lang.toggle")}
+          </button>
         </div>
-        <p className="lede">
-          Upload specs, chat in plain language, and keep versions side by side —
-          built for clear answers with evidence.
-        </p>
+        <p className="lede">{t("signin.lede")}</p>
         <div className="field">
-          <label htmlFor="api-key">Workspace API key</label>
+          <label htmlFor="api-key">{t("signin.label")}</label>
           <input
             id="api-key"
             type="text"
@@ -50,17 +59,17 @@ export function SignInPage() {
             spellCheck={false}
             data-1p-ignore="true"
             data-lpignore="true"
-            placeholder="Paste your key"
+            placeholder={t("signin.placeholder")}
             value={key}
             onChange={(e) => setKey(e.target.value)}
           />
         </div>
         {error ? <div className="error">{error}</div> : null}
         <button className="btn" type="submit" disabled={busy}>
-          {busy ? "Checking…" : "Continue"}
+          {busy ? t("signin.checking") : t("signin.continue")}
         </button>
         <p className="muted" style={{ fontSize: "0.82rem" }}>
-          The key stays in this browser session only.
+          {t("signin.hint")}
         </p>
       </form>
     </div>

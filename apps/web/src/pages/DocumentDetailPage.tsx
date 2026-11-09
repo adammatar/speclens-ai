@@ -8,12 +8,14 @@ import {
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { formatBytes, statusLabel } from "../lib/format";
+import { useLocale } from "../lib/i18n";
 import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { Chunk, DocumentDetail } from "../lib/types";
 
 export function DocumentDetailPage() {
   const { id = "" } = useParams();
   const { apiKey } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [chunks, setChunks] = useState<Chunk[]>([]);
@@ -77,17 +79,14 @@ export function DocumentDetailPage() {
       <div className="page-head">
         <div>
           <h1>{doc?.title ?? "Document"}</h1>
-          <p>
-            Latest and previous versions are kept for change questions. Processing runs
-            automatically in the background.
-          </p>
+          <p>{t("detail.lede")}</p>
         </div>
         <div className="row">
           <Link className="btn secondary" to="/documents">
-            Library
+            {t("detail.library")}
           </Link>
           <Link className="btn secondary" to="/">
-            Home chat
+            {t("detail.homeChat")}
           </Link>
           <button
             className="btn"
@@ -95,7 +94,7 @@ export function DocumentDetailPage() {
             disabled={busy}
             onClick={() => fileRef.current?.click()}
           >
-            Upload new version
+            {t("detail.uploadVersion")}
           </button>
           <input
             ref={fileRef}
@@ -113,12 +112,12 @@ export function DocumentDetailPage() {
             type="button"
             onClick={async () => {
               if (!apiKey || !id) return;
-              if (!window.confirm("Delete this document and all versions?")) return;
+              if (!window.confirm(t("detail.confirmDelete"))) return;
               await deleteDocument(apiKey, id);
               navigate("/documents");
             }}
           >
-            Delete
+            {t("detail.delete")}
           </button>
         </div>
       </div>
@@ -131,23 +130,23 @@ export function DocumentDetailPage() {
           <div key={v.id} className="version-card">
             <div>
               <strong>
-                {idx === 0 ? "Latest" : "Previous"} · v{v.version_number}
+                {idx === 0 ? t("detail.latest") : t("detail.previous")} · v{v.version_number}
               </strong>
               <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
                 {v.filename} · {formatBytes(v.byte_size)} ·{" "}
                 <span className={`badge ${v.status === "succeeded" ? "ready" : "busy"}`}>
                   {statusLabel(v.status)}
                 </span>
-                {idx === 0 && previous ? " · kept with previous for compare" : null}
+                {idx === 0 && previous ? t("detail.kept") : null}
               </div>
             </div>
           </div>
         ))}
-        {!versions.length ? <div className="empty">No versions yet.</div> : null}
+        {!versions.length ? <div className="empty">{t("detail.noVersions")}</div> : null}
       </div>
 
       <div className="stack" style={{ marginTop: "0.5rem" }}>
-        <h2 style={{ fontSize: "1.05rem" }}>Preview (latest)</h2>
+        <h2 style={{ fontSize: "1.05rem" }}>{t("detail.preview")}</h2>
         {chunks.slice(0, 8).map((chunk) => (
           <article key={chunk.id} className="version-card" style={{ display: "block" }}>
             <h3 style={{ fontSize: "0.92rem", marginBottom: 6 }}>
@@ -159,9 +158,7 @@ export function DocumentDetailPage() {
             </p>
           </article>
         ))}
-        {!chunks.length ? (
-          <p className="muted">No preview yet — wait until status is Ready.</p>
-        ) : null}
+        {!chunks.length ? <p className="muted">{t("detail.noPreview")}</p> : null}
       </div>
     </div>
   );

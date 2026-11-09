@@ -25,9 +25,18 @@ OPENAI_API_KEY=your-gemini-key-here
 OPENAI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
 GENERATION_BACKEND=openai_compat
 GENERATION_MODEL=gemini-3.8-flash
-# embeddings/extraction can stay stub for first demos
+# embeddings/extraction can stay stub for first demos (Hebrew-aware stub + simple FTS)
 EMBEDDING_BACKEND=stub
 EXTRACTION_BACKEND=stub
+# Optional Gemini extraction (same key/base URL):
+# EXTRACTION_BACKEND=openai_compat
+# EXTRACTION_MODEL=gemini-3.8-flash
+# Stronger multilingual embeddings (needs OpenAI key; keeps Vector dims=256):
+# EMBEDDING_BACKEND=openai
+# EMBEDDING_MODEL=text-embedding-3-small
+# EMBEDDING_DIMS=256
+# EMBEDDING_SEND_DIMENSIONS=true
+# OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
 3. Confirm these four lines are **uncommented and set** (not left as comments / not `stub`):
@@ -48,6 +57,18 @@ curl -s http://127.0.0.1:8001/api/v1/meta
 Should print `openai_compat`, and host `/meta` must match (not `stub`). If host still shows stub while the container is correct, something else is bound to the API port (historically Cursor on `:8000`).
 
 Rate limits apply on the free tier; if requests fail, wait and retry or check AI Studio quotas.
+
+## Hebrew / multilingual
+
+- UI: EN/HE toggle in the top bar (and Settings). Hebrew sets `dir=rtl`.
+- Chat answers follow the **question language** (prompt rule).
+- Lexical search uses Postgres FTS config `simple` (Hebrew tokens kept).
+- Stub embedder/extractor understand Unicode + Hebrew modals (`חייב`, `חובה`, `אסור`, …).
+- Demo files: `demos/hebrew-john-biography.md`, `demos/hebrew-access-control-v1.md` / `v2.md` (compare).
+
+### Why sign-in asks for a “workspace access key”
+
+That field is **not** your Gemini/OpenAI key. SpecLens protects the API with a workspace API key (`Authorization: Bearer …`). Locally the seeded key is `speclens-local-dev-key`. Your LLM provider key stays in server `.env` as `OPENAI_API_KEY`.
 
 ## Production-style Compose
 

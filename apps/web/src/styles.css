@@ -18,8 +18,8 @@
   --radius-lg: 20px;
   --radius-md: 14px;
   --radius-sm: 10px;
-  --font-display: "Outfit", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-body: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Outfit", "Heebo", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: "Source Sans 3", "Heebo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --blur: saturate(180%) blur(20px);
   color: var(--ink);
   font-family: var(--font-body);
@@ -128,6 +128,33 @@ p {
 .top-nav a.active {
   background: rgba(0, 122, 255, 0.12);
   color: var(--system-blue);
+}
+
+.lang-toggle {
+  border: 1px solid var(--line);
+  background: var(--bg-solid);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.lang-toggle:hover {
+  border-color: rgba(0, 122, 255, 0.35);
+  color: var(--system-blue);
+}
+
+html[dir="rtl"] .bubble.user {
+  align-self: flex-start;
+  border-bottom-right-radius: 18px;
+  border-bottom-left-radius: 6px;
+}
+
+html[dir="rtl"] .bubble.assistant {
+  align-self: flex-end;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 6px;
 }
 
 .main {

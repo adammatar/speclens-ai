@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type UIEvent } from "react";
 import { Link } from "react-router-dom";
 import { statusLabel } from "../lib/format";
+import { useLocale } from "../lib/i18n";
 import type { ChatDocSelection, DocumentSummary, MetaInfo } from "../lib/types";
 
 type Props = {
@@ -26,6 +27,7 @@ export function DocumentListPanel({
   pipelineMessage,
   busy,
 }: Props) {
+  const { t } = useLocale();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [visible, setVisible] = useState(5);
@@ -54,11 +56,16 @@ export function DocumentListPanel({
     <section className="panel">
       <div className="panel-head">
         <div>
-          <h1>Workspace</h1>
-          <p>Your files and live stats — chat stays on the right.</p>
+          <h1>{t("home.title")}</h1>
+          <p>{t("home.subtitle")}</p>
         </div>
-        <button className="btn sm" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
-          Upload
+        <button
+          className="btn sm"
+          type="button"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+        >
+          {t("home.upload")}
         </button>
         <input
           ref={fileRef}
@@ -75,26 +82,26 @@ export function DocumentListPanel({
 
       {pipelineMessage ? (
         <div className="pipeline">
-          <strong>Working</strong> · {pipelineMessage}
+          <strong>{t("home.working")}</strong> · {pipelineMessage}
         </div>
       ) : null}
 
       <div className="stats-row">
         <div className="stat-chip">
           <strong>{docs.length}</strong>
-          <span>Documents</span>
+          <span>{t("home.docs")}</span>
         </div>
         <div className="stat-chip">
           <strong>{docs.reduce((n, d) => n + d.version_count, 0)}</strong>
-          <span>Versions</span>
+          <span>{t("home.versions")}</span>
         </div>
         <div className="stat-chip">
           <strong>{health}</strong>
-          <span>API</span>
+          <span>{t("home.api")}</span>
         </div>
         <div className="stat-chip">
           <strong>{meta?.retention_days ?? "—"}</strong>
-          <span>Retention days</span>
+          <span>{t("home.retention")}</span>
         </div>
       </div>
 
@@ -105,7 +112,7 @@ export function DocumentListPanel({
             setQuery(e.target.value);
             setVisible(5);
           }}
-          placeholder="Search documents"
+          placeholder={t("home.search")}
         />
         <select
           value={statusFilter}
@@ -115,11 +122,11 @@ export function DocumentListPanel({
           }}
           style={{ maxWidth: 140 }}
         >
-          <option value="all">All status</option>
-          <option value="succeeded">Ready</option>
-          <option value="running">Reading</option>
-          <option value="queued">Queued</option>
-          <option value="failed">Failed</option>
+          <option value="all">{t("home.allStatus")}</option>
+          <option value="succeeded">{t("home.statusReady")}</option>
+          <option value="running">{t("home.statusReading")}</option>
+          <option value="queued">{t("home.statusQueued")}</option>
+          <option value="failed">{t("home.statusFailed")}</option>
         </select>
       </div>
 
@@ -137,7 +144,7 @@ export function DocumentListPanel({
               <div className="doc-row-main">
                 <strong>{doc.title}</strong>
                 <span className="muted">
-                  {doc.version_count} version{doc.version_count === 1 ? "" : "s"} ·{" "}
+                  {doc.version_count} {t("home.versions").toLowerCase()} ·{" "}
                   <span className={`badge ${badgeClass}`}>{statusLabel(doc.latest_status)}</span>
                 </span>
               </div>
@@ -149,13 +156,13 @@ export function DocumentListPanel({
                   disabled={doc.latest_status !== "succeeded"}
                   title={
                     doc.latest_status !== "succeeded"
-                      ? "Wait until the document is Ready"
+                      ? t("home.waitReady")
                       : selected
-                        ? "Selected for chat"
-                        : "Use in chat"
+                        ? t("home.inChat")
+                        : t("home.chat")
                   }
                 >
-                  {selected ? "In chat" : "Chat"}
+                  {selected ? t("home.inChat") : t("home.chat")}
                 </button>
                 <button
                   type="button"
@@ -163,7 +170,7 @@ export function DocumentListPanel({
                   disabled={busy}
                   onClick={() => versionRefs.current[doc.id]?.click()}
                 >
-                  New version
+                  {t("home.newVersion")}
                 </button>
                 <input
                   ref={(el) => {
@@ -182,10 +189,10 @@ export function DocumentListPanel({
             </div>
           );
         })}
-        {!shown.length ? <div className="empty">No documents yet. Upload a file to begin.</div> : null}
+        {!shown.length ? <div className="empty">{t("home.emptyDocs")}</div> : null}
         {shown.length < filtered.length ? (
           <div className="empty" style={{ padding: "0.5rem" }}>
-            Scroll for more…
+            {t("home.scrollMore")}
           </div>
         ) : null}
       </div>
@@ -196,7 +203,7 @@ export function DocumentListPanel({
           {meta?.generation_backend}/{meta?.extraction_backend}
         </span>
         <Link className="btn ghost sm" to="/documents">
-          See all documents
+          {t("home.seeAll")}
         </Link>
       </div>
     </section>

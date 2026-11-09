@@ -9,11 +9,13 @@ import {
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { statusLabel } from "../lib/format";
+import { useLocale } from "../lib/i18n";
 import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { DocumentSummary } from "../lib/types";
 
 export function DocumentsPage() {
   const { apiKey } = useAuth();
+  const { t } = useLocale();
   const [docs, setDocs] = useState<DocumentSummary[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -84,11 +86,16 @@ export function DocumentsPage() {
     <div className="main-pad">
       <div className="page-head">
         <div>
-          <h1>Documents</h1>
-          <p>Full library with search and filters. Upload new versions without leaving this page.</p>
+          <h1>{t("docs.title")}</h1>
+          <p>{t("docs.subtitle")}</p>
         </div>
-        <button className="btn" type="button" disabled={busy} onClick={() => fileRef.current?.click()}>
-          Upload
+        <button
+          className="btn"
+          type="button"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+        >
+          {t("docs.upload")}
         </button>
         <input
           ref={fileRef}
@@ -104,24 +111,28 @@ export function DocumentsPage() {
       </div>
 
       {error ? <div className="error" style={{ marginBottom: "0.75rem" }}>{error}</div> : null}
-      {pipeline ? <div className="pipeline" style={{ marginBottom: "0.75rem", borderRadius: 12 }}>{pipeline}</div> : null}
+      {pipeline ? (
+        <div className="pipeline" style={{ marginBottom: "0.75rem", borderRadius: 12 }}>
+          {pipeline}
+        </div>
+      ) : null}
 
       <div className="doc-toolbar" style={{ padding: 0, marginBottom: "0.75rem" }}>
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by title"
+          placeholder={t("docs.search")}
         />
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           style={{ maxWidth: 160 }}
         >
-          <option value="all">All status</option>
-          <option value="succeeded">Ready</option>
-          <option value="running">Reading</option>
-          <option value="queued">Queued</option>
-          <option value="failed">Failed</option>
+          <option value="all">{t("home.allStatus")}</option>
+          <option value="succeeded">{t("home.statusReady")}</option>
+          <option value="running">{t("home.statusReading")}</option>
+          <option value="queued">{t("home.statusQueued")}</option>
+          <option value="failed">{t("home.statusFailed")}</option>
         </select>
       </div>
 
@@ -140,7 +151,7 @@ export function DocumentsPage() {
                   <Link to={`/documents/${doc.id}`}>{doc.title}</Link>
                 </strong>
                 <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
-                  {doc.version_count} version{doc.version_count === 1 ? "" : "s"} ·{" "}
+                  {doc.version_count} {t("home.versions").toLowerCase()} ·{" "}
                   <span className={`badge ${badgeClass}`}>{statusLabel(doc.latest_status)}</span>
                 </div>
               </div>
@@ -151,7 +162,7 @@ export function DocumentsPage() {
                   disabled={busy}
                   onClick={() => versionRefs.current[doc.id]?.click()}
                 >
-                  New version
+                  {t("docs.newVersion")}
                 </button>
                 <input
                   ref={(el) => {
@@ -171,18 +182,18 @@ export function DocumentsPage() {
                   className="btn danger sm"
                   onClick={async () => {
                     if (!apiKey) return;
-                    if (!window.confirm(`Delete “${doc.title}”?`)) return;
+                    if (!window.confirm(t("docs.confirmDelete", { title: doc.title }))) return;
                     await deleteDocument(apiKey, doc.id);
                     await refresh();
                   }}
                 >
-                  Delete
+                  {t("docs.delete")}
                 </button>
               </div>
             </div>
           );
         })}
-        {!filtered.length ? <div className="empty">No matching documents.</div> : null}
+        {!filtered.length ? <div className="empty">{t("docs.empty")}</div> : null}
       </div>
     </div>
   );
