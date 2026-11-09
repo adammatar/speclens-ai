@@ -9,8 +9,8 @@ make smoke
 cd apps/web && npm install && npm run dev
 ```
 
-- API: http://127.0.0.1:8000
-- Web (Vite): http://127.0.0.1:5173 (proxies `/api` → API)
+- API: http://127.0.0.1:8001 (mapped from container `:8000`; avoids Cursor binding `:8000`)
+- Web (Vite): http://127.0.0.1:5173 (proxies `/api` → API on `:8001`)
 - Bootstrap key: `speclens-local-dev-key` (rotate before any shared host)
 
 ## Gemini free tier (cited chat)
@@ -42,9 +42,10 @@ grep -E '^(OPENAI_API_KEY|OPENAI_BASE_URL|GENERATION_BACKEND|GENERATION_MODEL)='
 
 ```bash
 docker compose --env-file .env -f infra/compose.yaml exec api printenv GENERATION_BACKEND
+curl -s http://127.0.0.1:8001/api/v1/meta
 ```
 
-Should print `openai_compat`.
+Should print `openai_compat`, and host `/meta` must match (not `stub`). If host still shows stub while the container is correct, something else is bound to the API port (historically Cursor on `:8000`).
 
 Rate limits apply on the free tier; if requests fail, wait and retry or check AI Studio quotas.
 

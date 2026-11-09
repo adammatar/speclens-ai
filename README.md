@@ -36,7 +36,7 @@ Sign in with a workspace API key. Local/CI bootstrap key is documented in `.env.
 
 Production-style stack (web on `:8080`): `make up-prod`. Ops: [`docs/deploy.md`](docs/deploy.md). Demo wipe + re-seed: `make demo-reset`.
 
-API docs (local): http://127.0.0.1:8000/docs — authenticated routes need `Authorization: Bearer <key>`; `/health`, `/ready`, `/meta` stay public.
+API docs (local): http://127.0.0.1:8001/docs — authenticated routes need `Authorization: Bearer <key>`; `/health`, `/ready`, `/meta` stay public. (Host port **8001** avoids clashes with Cursor on `:8000`.)
 
 ## Screenshots
 
