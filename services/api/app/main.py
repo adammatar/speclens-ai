@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 
 from app import __version__
 from app.api.routes import comparisons, conversations, documents, health, requirements, search
@@ -36,6 +38,40 @@ def create_app() -> FastAPI:
     application.include_router(conversations.router, prefix="/api/v1")
     application.include_router(requirements.router, prefix="/api/v1")
     application.include_router(comparisons.router, prefix="/api/v1")
+
+    def custom_openapi() -> dict[str, Any]:
+        if application.openapi_schema:
+            return application.openapi_schema
+        schema = get_openapi(
+            title=application.title,
+            version=application.version,
+            routes=application.routes,
+        )
+        components = schema.setdefault("components", {})
+        schemes = components.setdefault("securitySchemes", {})
+        schemes["BearerAuth"] = {
+            "type": "http",
+            "scheme": "bearer",
+            "description": "API key as Bearer token (local bootstrap: speclens-local-dev-key)",
+        }
+        schemes["ApiKeyHeader"] = {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+            "description": "Alternate API key header",
+        }
+        # Apply to all paths except public health/ready probes.
+        public = {"/api/v1/health", "/api/v1/ready"}
+        for path, methods in schema.get("paths", {}).items():
+            if path in public:
+                continue
+            for operation in methods.values():
+                if isinstance(operation, dict):
+                    operation["security"] = [{"BearerAuth": []}, {"ApiKeyHeader": []}]
+        application.openapi_schema = schema
+        return application.openapi_schema
+
+    application.openapi = custom_openapi  # type: ignore[method-assign]
     return application
 
 

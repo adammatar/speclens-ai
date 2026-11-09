@@ -6,8 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.schemas import SearchHitResponse, SearchRequest, SearchResponse
+from app.db.models import WorkspaceRole
 from app.db.session import get_session
 from app.retrieval.search import SearchError, search_chunks
+from app.security.auth import AuthContext, require_api_key
+from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -16,7 +19,9 @@ router = APIRouter(prefix="/search", tags=["search"])
 def search_endpoint(
     body: SearchRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> SearchResponse:
+    require_workspace_role(auth, body.workspace_id, WorkspaceRole.VIEWER)
     try:
         hits = search_chunks(
             session,
@@ -59,7 +64,8 @@ def search_endpoint(
 def search_debug_endpoint(
     body: SearchRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> SearchResponse:
     """Same as search with per-channel ranks/scores forced on."""
     debug_body = body.model_copy(update={"debug": True})
-    return search_endpoint(debug_body, session)
+    return search_endpoint(debug_body, session, auth)

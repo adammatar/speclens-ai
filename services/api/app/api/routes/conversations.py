@@ -6,7 +6,7 @@ import json
 import uuid
 from collections.abc import Iterator
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -19,8 +19,12 @@ from app.api.schemas import (
     MessageResponse,
     PostMessageRequest,
 )
+from app.db.models import WorkspaceRole
 from app.db.session import get_session
 from app.qa.service import QAError, create_conversation, get_conversation, post_user_message
+from app.security.auth import AuthContext, require_api_key
+from app.security.rate_limit import check_rate_limit
+from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -29,7 +33,9 @@ router = APIRouter(prefix="/conversations", tags=["conversations"])
 def create_conversation_endpoint(
     body: CreateConversationRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> ConversationSummaryResponse:
+    require_workspace_role(auth, body.workspace_id, WorkspaceRole.EDITOR)
     try:
         conversation = create_conversation(
             session,
@@ -51,11 +57,13 @@ def create_conversation_endpoint(
 def get_conversation_endpoint(
     conversation_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> ConversationDetailResponse:
     try:
         conversation = get_conversation(session, conversation_id)
     except QAError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, conversation.workspace_id, WorkspaceRole.VIEWER)
     messages: list[MessageResponse] = []
     for message in conversation.messages:
         messages.append(
@@ -95,10 +103,18 @@ def get_conversation_endpoint(
 
 @router.post("/{conversation_id}/messages", response_model=AnswerTurnResponse)
 def post_message_endpoint(
+    request: Request,
     conversation_id: uuid.UUID,
     body: PostMessageRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> AnswerTurnResponse | StreamingResponse:
+    check_rate_limit(request, "qa")
+    try:
+        conversation = get_conversation(session, conversation_id)
+    except QAError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, conversation.workspace_id, WorkspaceRole.EDITOR)
     if body.stream:
         return StreamingResponse(
             _stream_answer(session, conversation_id, body),
@@ -148,7 +164,6 @@ def _stream_answer(
 
     yield f"data: {json.dumps({'event': 'retrieval', 'status': turn.retrieval_status})}\n\n"
     yield f"data: {json.dumps({'event': 'generation', 'status': turn.generation_status})}\n\n"
-    # Naive token stream for UI progress (answer already computed in stub/openai path).
     for token in turn.content.split(" "):
         yield f"data: {json.dumps({'event': 'token', 'text': token + ' '})}\n\n"
     final = {

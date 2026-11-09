@@ -17,6 +17,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 "**/migrations/**" = ["E501"]
 "**/api/routes/**" = ["B008"]
+"**/security/auth.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

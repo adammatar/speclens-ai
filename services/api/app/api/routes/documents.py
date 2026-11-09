@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -16,11 +16,12 @@ from app.api.schemas import (
     ReprocessResponse,
     UploadAcceptedResponse,
 )
-from app.db.models import Chunk, DocumentVersion, IngestionJob
+from app.db.models import Chunk, DocumentVersion, IngestionJob, WorkspaceRole
 from app.db.session import get_session
 from app.ingestion.errors import DuplicateDocumentError, NotFoundError
 from app.ingestion.queue import enqueue_ingest_job
 from app.ingestion.service import (
+    DEFAULT_WORKSPACE_ID,
     count_chunks,
     delete_document,
     get_document,
@@ -29,6 +30,10 @@ from app.ingestion.service import (
     upload_document_version,
 )
 from app.ingestion.validate import UploadValidationError
+from app.security.audit import record_audit
+from app.security.auth import AuthContext, require_api_key
+from app.security.rate_limit import check_rate_limit
+from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -39,10 +44,14 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def upload_document_endpoint(
+    request: Request,
     file: UploadFile = File(...),
     title: str | None = Form(default=None),
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> UploadAcceptedResponse:
+    check_rate_limit(request, "upload")
+    require_workspace_role(auth, DEFAULT_WORKSPACE_ID, WorkspaceRole.EDITOR)
     raw = await file.read()
     try:
         result = upload_document(
@@ -51,6 +60,7 @@ async def upload_document_endpoint(
             content_type=file.content_type,
             data=raw,
             title=title,
+            workspace_id=DEFAULT_WORKSPACE_ID,
         )
     except DuplicateDocumentError as exc:
         raise HTTPException(
@@ -66,6 +76,15 @@ async def upload_document_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     enqueue_ingest_job(result.job_id)
+    record_audit(
+        session,
+        auth=auth,
+        action="document.upload",
+        workspace_id=DEFAULT_WORKSPACE_ID,
+        resource_type="document",
+        resource_id=result.document_id,
+        detail={"filename": file.filename or "upload.bin", "byte_size": len(raw)},
+    )
     return UploadAcceptedResponse(
         document_id=result.document_id,
         document_version_id=result.document_version_id,
@@ -78,10 +97,15 @@ async def upload_document_endpoint(
 def get_job_endpoint(
     job_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> JobStatusResponse:
     job = session.get(IngestionJob, job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    version = session.get(DocumentVersion, job.document_version_id)
+    if version is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    require_workspace_role(auth, version.workspace_id, WorkspaceRole.VIEWER)
     return JobStatusResponse(
         id=job.id,
         document_version_id=job.document_version_id,
@@ -103,10 +127,12 @@ def get_job_endpoint(
 def list_chunks_endpoint(
     document_version_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> list[ChunkResponse]:
     version = session.get(DocumentVersion, document_version_id)
     if version is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found")
+    require_workspace_role(auth, version.workspace_id, WorkspaceRole.VIEWER)
     chunks = session.scalars(
         select(Chunk)
         .where(Chunk.document_version_id == document_version_id)
@@ -135,7 +161,12 @@ def list_chunks_endpoint(
 def reprocess_endpoint(
     document_version_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> ReprocessResponse:
+    version = session.get(DocumentVersion, document_version_id)
+    if version is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Version not found")
+    require_workspace_role(auth, version.workspace_id, WorkspaceRole.EDITOR)
     try:
         result = reprocess_document_version(session, document_version_id)
     except NotFoundError as exc:
@@ -154,10 +185,18 @@ def reprocess_endpoint(
     status_code=status.HTTP_202_ACCEPTED,
 )
 async def upload_document_version_endpoint(
+    request: Request,
     document_id: uuid.UUID,
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> UploadAcceptedResponse:
+    check_rate_limit(request, "upload")
+    try:
+        document = get_document(session, document_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, document.workspace_id, WorkspaceRole.EDITOR)
     raw = await file.read()
     try:
         result = upload_document_version(
@@ -183,6 +222,15 @@ async def upload_document_version_endpoint(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
     enqueue_ingest_job(result.job_id)
+    record_audit(
+        session,
+        auth=auth,
+        action="document.version_upload",
+        workspace_id=document.workspace_id,
+        resource_type="document_version",
+        resource_id=result.document_version_id,
+        detail={"filename": file.filename or "upload.bin", "byte_size": len(raw)},
+    )
     return UploadAcceptedResponse(
         document_id=result.document_id,
         document_version_id=result.document_version_id,
@@ -195,11 +243,13 @@ async def upload_document_version_endpoint(
 def get_document_endpoint(
     document_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> DocumentResponse:
     try:
         document = get_document(session, document_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, document.workspace_id, WorkspaceRole.VIEWER)
 
     versions: list[DocumentVersionResponse] = []
     for version in document.versions:
@@ -232,8 +282,23 @@ def get_document_endpoint(
 def delete_document_endpoint(
     document_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> None:
+    try:
+        document = get_document(session, document_id)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, document.workspace_id, WorkspaceRole.EDITOR)
+    workspace_id = document.workspace_id
     try:
         delete_document(session, document_id)
     except NotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    record_audit(
+        session,
+        auth=auth,
+        action="document.delete",
+        workspace_id=workspace_id,
+        resource_type="document",
+        resource_id=document_id,
+    )

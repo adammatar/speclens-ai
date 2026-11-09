@@ -1,151 +1,126 @@
 # SpecLens AI - Progress
 
-## Phase 0-6
+## Phase 0-7
 
-**Status:** Complete (approved) - PRs #1-#6
+**Status:** Complete (approved) - PRs #1-#7
 
 ---
 
-## Phase 7 - Evaluation system
+## Phase 8 - Security, authentication and privacy
 
-**Status:** Complete and re-verified (awaiting review / merge; stop before Phase 8)
+**Status:** Complete (awaiting review / merge; stop before Phase 9)
 
 **Date:** 2026-11-09
 
-**Branch:** `cursor/phase7-evaluation-harness-018c`
+**Branch:** `cursor/phase8-security-auth-018c`
 
-**PR:** https://github.com/adammatar/speclens-ai/pull/7
+**PR:** (opened against Phase 7 branch)
 
 ### Architecture and implementation decisions
 
-1. Offline harness under `evals/harness` (`python -m evals.harness` / `make eval`) - no live LLM spend in CI.
-2. Versioned JSONL suites: retrieval, QA citations, extraction, compare, insufficient-evidence, injection (synthetic fixtures).
-3. Graders: Recall@10, MRR, citation precision/coverage, unsupported-claim rate, extraction F1, compare alignment, IE accuracy, injection resistance.
-4. Reports: `artifacts/eval/report.json` + `.html`; copies under `evals/reports/latest.*` (gitignored).
-5. Baseline diff vs `evals/baselines/baseline_v1.json` for prompt/model change comparison.
-6. Thresholds in `evals/thresholds.json`; CI job advisory unless `EVAL_ENFORCE=true` / `--enforce`.
-7. Optional `scripts/export_eval_examples.py` imports Phase 5/6 `is_eval_example` rows.
+1. Migration `20261108_0007` adds `users`, `workspace_memberships`, `api_keys`, `audit_events` plus bootstrap owner + hashed local API key.
+2. `require_api_key` accepts Bearer or `X-API-Key`; keys stored as SHA-256; `/health` and `/ready` remain public.
+3. Workspace RBAC (`owner` / `editor` / `viewer`) enforced on documents, search, conversations, requirements, comparisons.
+4. In-process rate limits on upload/QA/extract/compare; `AUTH_REQUIRED`, `RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS` settings.
+5. Structured log redaction + audit events for upload/delete/export/accept/confirm (no document bodies).
+6. OpenAPI security schemes (`BearerAuth`, `ApiKeyHeader`); CI compose smoke sends bootstrap Bearer token and asserts 401 without it.
 
 ### Acceptance criteria (technical-plan exit criteria)
 
 | Criterion | Met? | Evidence |
 | --- | --- | --- |
-| `make eval` produces JSON and HTML | Yes | re-run wrote both artifacts; runner smoke test |
-| Prompt/model changes comparable to baseline | Yes | non-empty `baseline_diff` in report |
-| CI can block below thresholds | Yes | `--enforce` / `EVAL_ENFORCE`; advisory by default |
-| >=50 questions and >=20 extraction examples | Yes | 60 question-like; 24 extraction |
+| Cross-workspace access denied | Yes | `test_cross_workspace_access_denied` |
+| Deleted docs absent from storage/chunks/embeddings | Yes | `test_bootstrap_key_upload_delete_clears_artifacts` |
+| API keys never reach the frontend | Yes | no key material under `apps/web`; contracts/docs only |
+| Logs hold IDs/metrics, not confidential content | Yes | redaction unit tests + JSON formatter |
+| Security checklist documented | Yes | `docs/security.md` |
 
-### Changed files (vs Phase 6)
+### Changed files (highlights)
 
 ```text
 .github/workflows/ci.yml
-.gitignore
-Makefile
+.env.example
 README.md
-docs/evaluation.md
 docs/progress.md
-evals/__init__.py
-evals/baselines/baseline_v1.json
-evals/datasets/compare_v1.jsonl
-evals/datasets/extraction_v1.jsonl
-evals/datasets/injection_v1.jsonl
-evals/datasets/insufficient_evidence_v1.jsonl
-evals/datasets/qa_citations_v1.jsonl
-evals/datasets/retrieval_v1.jsonl
-evals/harness/__init__.py
-evals/harness/__main__.py
-evals/harness/graders.py
-evals/harness/metrics.py
-evals/harness/report.py
-evals/harness/runner.py
-evals/tests/test_metrics.py
-evals/tests/test_runner_smoke.py
-evals/thresholds.json
-pyproject.toml
-scripts/export_eval_examples.py
-scripts/generate_eval_datasets.py
+docs/security.md
+packages/contracts/openapi.json
+packages/contracts/src/generated.ts
+services/api/app/api/routes/*.py
+services/api/app/core/config.py
+services/api/app/core/logging.py
+services/api/app/db/models.py
+services/api/app/main.py
+services/api/app/security/*
+services/api/migrations/versions/20261108_0007_security_auth.py
+services/api/tests/conftest.py
+services/api/tests/test_security_auth.py
 ```
 
-### Commands / results (re-verification 2026-11-09)
+### Commands / results
 
 ```text
 ruff check services/api workers evals scripts     -> pass
-ruff format --check ...                           -> pass (104 files)
-python3 -m pytest -q                              -> 40 passed, 0 failed
-make eval                                         -> all gates passed; report.json + report.html
-python -m evals.harness --enforce                 -> exit 0 (gates pass)
-CI (PR #7): Lint/pytest SUCCESS; Evaluation harness SUCCESS; Compose smoke SUCCESS
-Dataset counts: retrieval 40 + qa 20 = 60 questions; extraction 24
+ruff format --check ...                           -> pass
+python3 -m mypy                                   -> Success (71 source files)
+python3 -m pytest -q                              -> 48 passed
+python -m evals.harness                           -> all gates passed (injection green)
+compose smoke with Bearer speclens-local-dev-key  -> 401 without key; upload/search/QA/extract OK
 ```
 
 **Failures:** none.
 
 ### Explicit stop
 
-Phase 8 (security, authentication, privacy) is **not started**. Awaiting explicit approval.
+Phase 9 (production UX and deployment) is **not started**. Awaiting explicit approval.
 
 ### Remaining risks
 
-1. Synthetic gold/predictions can inflate offline metrics vs production traffic.
-2. Advisory CI gates need calibration before hard enforcement.
-3. Latency/cost are not yet first-class measured channels.
-4. Live-system prediction capture (API → predictions JSONL) is future work.
+1. Bootstrap key is a documented local secret - must be rotated before any shared/hosted deploy.
+2. In-process rate limiter is per-API replica (not Redis-backed yet).
+3. Retention sweep job is config-only; enforcement is delete API + docs for now.
 
 ---
 
-## Phase 8 plan (proposed) - Security, authentication and privacy
+## Phase 9 plan (proposed) - Production UX and deployment
 
 **Do not execute until explicitly approved.**
 
 ### Goal
 
-Workspace-aware authentication and authorization, hardened uploads/secrets/logging, audit history, and documented privacy/retention controls - without breaking local stub Compose workflows.
+Ship a usable Nuxt frontend for the authenticated API and a reproducible hosted deployment path (Compose/prod images, managed Postgres/Redis/object storage, HTTPS, monitoring, backups) with a resettable public demo on non-confidential docs.
 
 ### Scope (in)
 
-1. **Identity & workspaces**
-   - Users + API tokens (local-friendly); optional OIDC later.
-   - Roles: owner / editor / viewer on a workspace.
-2. **Authorization**
-   - Server-side workspace isolation on documents, conversations, requirements, comparisons, search.
-   - Fail closed for missing/invalid credentials on sensitive routes; keep `/health` public.
-3. **Hardening**
-   - Rate limits on upload/QA/extract/compare.
-   - Upload size/MIME allow-list audit; retention config; complete deletion already present - verify storage+chunks+embeddings gone under auth.
-4. **Privacy & secrets**
-   - No document bodies or API keys in logs; redaction helpers + tests.
-   - Secret management docs; `.env.example` only.
-5. **Audit**
-   - `audit_events` table for upload/delete/export/accept decisions.
-6. **Tests + CI**
-   - Cross-workspace denial tests; auth header compose smoke; prompt-injection suite already in evals - keep green.
-   - Update OpenAPI security schemes + contracts.
+1. **Frontend pages:** sign-in (API key / session), workspace dashboard, document library, upload + job progress, document viewer, cited chat, requirements workspace, version compare, eval dashboard, settings/retention.
+2. **API client:** contracts package; never embed OpenAI or bootstrap secrets in the browser bundle.
+3. **Deployment:** production Docker images; managed Postgres+pgvector; Redis; object storage; API+worker; HTTPS; health/ready probes; error tracking; monitoring.
+4. **Ops:** migration/rollback runbook; backup+restore drill; demo reset procedure.
 
 ### Non-goals
 
-- Full enterprise SSO/SCIM / customer-managed KMS
-- Public multi-tenant marketing site
-- Phase 9 production UX frontend
+- Enterprise SSO/SCIM / customer KMS
+- Electron packaging (optional later)
+- Phase 10 portfolio packaging
 
 ### Exit criteria to verify before stop
 
 | Criterion | How we will prove it |
 | --- | --- |
-| Cross-workspace access denied | Integration tests |
-| Deleted docs absent from storage/chunks/embeddings | Delete test under auth |
-| API keys never reach the frontend | Contracts/docs + no key in web bundle |
-| Logs hold IDs/metrics, not confidential content | Redaction unit tests |
-| Security checklist documented | `docs/security.md` update |
+| Fresh production deploy from docs | Runbook dry-run in CI or staging |
+| Demo resettable safely | Scripted wipe of demo workspace |
+| Health + monitoring | Probes + basic metrics/alerts wired |
+| Backup restore tested | Documented restore of dump + object store |
+| No confidential samples published | Demo corpus review |
 
 ### Implementation sketch
 
-1. Branch `cursor/phase8-security-auth-018c` from Phase 7.
-2. Migration `20261108_0008` (users, memberships, api_keys, audit_events).
-3. Auth dependency + workspace filters on routes; rate limit middleware.
-4. Tests + CI; progress; PR; **stop for Phase 9 approval**.
+1. Branch `cursor/phase9-production-ux-018c` from Phase 8.
+2. Nuxt app under `apps/web` against OpenAPI contracts; wire auth header from secure client storage.
+3. Prod Compose/image targets + deploy docs; backup/restore verification.
+4. Progress update; PR; **stop for Phase 10 approval**.
 
-### Risks for Phase 8
+### Risks for Phase 9
 
-- Local DX friction if auth is too strict without a clear stub token path.
-- Migrating existing default-workspace data needs a bootstrap owner.
-- Rate limits must not flake CI smoke.
+- Frontend scope creep vs thin vertical slices per page.
+- Hosting secrets/bootstrap key misuse if demo env shares local defaults.
+- Object-store and DB backup consistency during demo reset.
