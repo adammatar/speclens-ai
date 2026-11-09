@@ -2,11 +2,12 @@
 
 Evaluation-driven AI platform for technical specifications: ingest large docs, retrieve with citations, extract structured requirements, compare versions, and measure quality.
 
-Phase 7 adds an offline evaluation harness (`make eval`) with JSONL datasets, graders, JSON/HTML reports, and advisory CI gates.
+Phase 8 adds API-key auth, workspace RBAC, rate limits, audit events, and log redaction. Local/CI bootstrap key: `speclens-local-dev-key`.
 
 ## Stack
 
 - **API:** FastAPI, Pydantic settings, SQLAlchemy 2, Alembic, structured JSON logging
+- **Auth:** hashed API keys, workspace roles (owner/editor/viewer), rate limits, audit trail
 - **Worker:** Celery + Redis (`speclens.ingest_document`, `speclens.embed_document_version`, `speclens.extract_requirements`, `speclens.compare_document_versions`)
 - **Ingestion:** validate, SHA-256 dedupe, parse, hierarchical chunking, delete/reprocess, new document versions
 - **Retrieval:** stub/OpenAI embeddings, pgvector HNSW, FTS, hybrid RRF search
@@ -15,7 +16,7 @@ Phase 7 adds an offline evaluation harness (`make eval`) with JSONL datasets, gr
 - **Compare:** requirement alignment, change categories, confirm/reject, Jira/test/file links
 - **Eval:** JSONL datasets, offline graders, baseline diff, advisory CI thresholds
 - **Data:** Postgres 16 + pgvector; local filesystem object storage
-- **Web:** `apps/web` placeholder (Nuxt in a later phase)
+- **Web:** `apps/web` placeholder (Nuxt in Phase 9)
 - **Contracts:** OpenAPI export to TypeScript under `packages/contracts`
 - **Tooling:** Ruff, mypy, pytest, pre-commit, Make, GitHub Actions
 
@@ -30,6 +31,8 @@ make smoke       # health + ready checks
 ```
 
 API docs (local): http://127.0.0.1:8000/docs
+
+Authenticated routes require `Authorization: Bearer speclens-local-dev-key` (or `X-API-Key`). Health/ready stay public.
 
 - `GET /api/v1/health` - liveness
 - `GET /api/v1/ready` - readiness (fails closed until Postgres is reachable)

@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     extraction_model: str = "speclens-stub-extract-v1"
     extraction_prompt_version: str = "extraction-v1"
 
+    auth_required: bool = True
+    rate_limit_per_minute: int = 120
+    retention_days: int = 365
+
     @property
     def is_local_mode(self) -> bool:
         return self.speclens_deployment_mode == "local"

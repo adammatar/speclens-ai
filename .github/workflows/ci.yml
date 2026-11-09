@@ -113,14 +113,20 @@ jobs:
       - name: Upload and ingest Markdown fixture
         run: |
           set -euo pipefail
+          AUTH="Authorization: Bearer speclens-local-dev-key"
+          # Health stays public; authenticated routes require the bootstrap key.
+          CODE401=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8000/api/v1/documents/upload \
+            -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown")
+          test "$CODE401" = "401"
           UPLOAD=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/documents/upload \
+            -H "$AUTH" \
             -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown" \
             -F "title=CI Sample")
           echo "$UPLOAD"
           JOB_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$UPLOAD")
           VER_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_version_id'])" "$UPLOAD")
           for i in $(seq 1 30); do
-            JOB=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB_ID}")
+            JOB=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB_ID}")
             STATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$JOB")
             if [ "$STATUS" = "succeeded" ]; then
               break
@@ -132,9 +138,10 @@ jobs:
             sleep 1
           done
           test "$STATUS" = "succeeded"
-          CHUNKS=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/versions/${VER_ID}/chunks")
+          CHUNKS=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/documents/versions/${VER_ID}/chunks")
           python -c "import json,sys; c=json.loads(sys.argv[1]); assert len(c) > 0" "$CHUNKS"
           CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://127.0.0.1:8000/api/v1/documents/upload \
+            -H "$AUTH" \
             -F "file=@services/api/tests/fixtures/sample.md;type=text/markdown")
           test "$CODE" = "409"
           for i in $(seq 1 40); do
@@ -147,21 +154,24 @@ jobs:
           done
           test "$COUNT" -gt 0
           SEARCH=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/search \
+            -H "$AUTH" \
             -H 'Content-Type: application/json' \
             -d "{\"query\":\"hierarchical chunking\",\"document_version_ids\":[\"${VER_ID}\"],\"debug\":true}")
           python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['results']; r=d['results'][0]; assert r['excerpt']; assert r['document_version_id']" "$SEARCH"
           CONV=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/conversations \
+            -H "$AUTH" \
             -H 'Content-Type: application/json' \
             -d '{"title":"CI QA"}')
           CID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['id'])" "$CONV")
           ANS=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/conversations/${CID}/messages" \
+            -H "$AUTH" \
             -H 'Content-Type: application/json' \
             -d "{\"question\":\"What about Markdown uploads?\",\"document_version_ids\":[\"${VER_ID}\"]}")
           python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['status'] in {'completed','insufficient_evidence'}; assert d['retrieval_status']; assert set(d.get('citation_chunk_ids') or []).issubset(set(d.get('retrieved_chunk_ids') or []))" "$ANS"
-          EXT=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/documents/versions/${VER_ID}/extractions")
+          EXT=$(curl -sf -H "$AUTH" -X POST "http://127.0.0.1:8000/api/v1/documents/versions/${VER_ID}/extractions")
           EJOB=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$EXT")
           for i in $(seq 1 40); do
-            EJ=$(curl -sf "http://127.0.0.1:8000/api/v1/extractions/${EJOB}")
+            EJ=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/extractions/${EJOB}")
             ESTATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$EJ")
             if [ "$ESTATUS" = "succeeded" ]; then
               break
@@ -173,19 +183,20 @@ jobs:
             sleep 1
           done
           test "$ESTATUS" = "succeeded"
-          REQS=$(curl -sf "http://127.0.0.1:8000/api/v1/requirements?document_version_id=${VER_ID}")
+          REQS=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/requirements?document_version_id=${VER_ID}")
           python -c "import json,sys; rows=json.loads(sys.argv[1]); assert rows; assert all(r.get('sources') and any((s.get('source_quote') or '').strip() for s in r['sources']) for r in rows); assert all(r.get('original_payload') for r in rows)" "$REQS"
-          EXPORT=$(curl -sf "http://127.0.0.1:8000/api/v1/requirements/export?format=json&document_version_id=${VER_ID}")
+          EXPORT=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/requirements/export?format=json&document_version_id=${VER_ID}")
           python -c "import json,sys; rows=json.loads(sys.argv[1]); assert isinstance(rows, list) and rows" "$EXPORT"
           DOC_ID=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_id'])" "$UPLOAD")
           printf '%s\n\nThe system shall emit structured audit events for rejected uploads.\nCI compare %s\n' "$(cat services/api/tests/fixtures/sample.md)" "$RANDOM" > /tmp/sample-v2.md
           sed -i 's/preserve heading paths on every chunk/preserve heading paths on every chunk for navigation/' /tmp/sample-v2.md
           UP2=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/documents/${DOC_ID}/versions" \
+            -H "$AUTH" \
             -F "file=@/tmp/sample-v2.md;type=text/markdown")
           VER2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['document_version_id'])" "$UP2")
           JOB2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$UP2")
           for i in $(seq 1 30); do
-            JOB=$(curl -sf "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB2}")
+            JOB=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/documents/jobs/${JOB2}")
             STATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$JOB")
             if [ "$STATUS" = "succeeded" ] || [ "$STATUS" = "failed" ]; then break; fi
             sleep 1
@@ -198,21 +209,22 @@ jobs:
             sleep 1
           done
           test "$COUNT" -gt 0
-          EXT2=$(curl -sf -X POST "http://127.0.0.1:8000/api/v1/documents/versions/${VER2}/extractions")
+          EXT2=$(curl -sf -H "$AUTH" -X POST "http://127.0.0.1:8000/api/v1/documents/versions/${VER2}/extractions")
           EJOB2=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$EXT2")
           for i in $(seq 1 40); do
-            EJ=$(curl -sf "http://127.0.0.1:8000/api/v1/extractions/${EJOB2}")
+            EJ=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/extractions/${EJOB2}")
             ESTATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$EJ")
             if [ "$ESTATUS" = "succeeded" ] || [ "$ESTATUS" = "failed" ]; then break; fi
             sleep 1
           done
           test "$ESTATUS" = "succeeded"
           CMP=$(curl -sf -X POST http://127.0.0.1:8000/api/v1/comparisons \
+            -H "$AUTH" \
             -H 'Content-Type: application/json' \
             -d "{\"base_document_version_id\":\"${VER_ID}\",\"target_document_version_id\":\"${VER2}\"}")
           CJOB=$(python -c "import json,sys; print(json.loads(sys.argv[1])['job_id'])" "$CMP")
           for i in $(seq 1 40); do
-            CJ=$(curl -sf "http://127.0.0.1:8000/api/v1/comparisons/${CJOB}")
+            CJ=$(curl -sf -H "$AUTH" "http://127.0.0.1:8000/api/v1/comparisons/${CJOB}")
             CSTATUS=$(python -c "import json,sys; print(json.loads(sys.argv[1])['status'])" "$CJ")
             if [ "$CSTATUS" = "succeeded" ] || [ "$CSTATUS" = "failed" ]; then break; fi
             sleep 1
@@ -221,6 +233,7 @@ jobs:
           python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['changes']; assert all((c.get('old_source_quote') or c.get('new_source_quote')) if c['category'] in ('added','removed') else (c.get('old_source_quote') and c.get('new_source_quote')) for c in d['changes']); open('/tmp/chg','w').write(d['changes'][0]['id'])" "$CJ"
           CHG=$(cat /tmp/chg)
           DEC=$(curl -sf -X PATCH "http://127.0.0.1:8000/api/v1/comparisons/changes/${CHG}" \
+            -H "$AUTH" \
             -H 'Content-Type: application/json' -d '{"decision":"confirmed"}')
           python -c "import json,sys; d=json.loads(sys.argv[1]); assert d['decision']=='confirmed' and d['is_eval_example'] is True" "$DEC"
 

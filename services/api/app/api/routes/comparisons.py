@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.schemas import (
@@ -20,17 +20,31 @@ from app.compare.pipeline import (
     decide_change,
     get_comparison_job,
 )
+from app.db.models import DocumentVersion, RequirementChange, WorkspaceRole
 from app.db.session import get_session
 from app.ingestion.queue import enqueue_comparison_job
+from app.security.audit import record_audit
+from app.security.auth import AuthContext, require_api_key
+from app.security.rate_limit import check_rate_limit
+from app.security.workspace import require_workspace_role
 
 router = APIRouter(prefix="/comparisons", tags=["comparisons"])
 
 
 @router.post("", response_model=StartComparisonResponse, status_code=status.HTTP_202_ACCEPTED)
 def start_comparison(
+    request: Request,
     body: CreateComparisonRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> StartComparisonResponse:
+    check_rate_limit(request, "compare")
+    base = session.get(DocumentVersion, body.base_document_version_id)
+    target = session.get(DocumentVersion, body.target_document_version_id)
+    if base is None or target is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="version not found")
+    require_workspace_role(auth, base.workspace_id, WorkspaceRole.EDITOR)
+    require_workspace_role(auth, target.workspace_id, WorkspaceRole.EDITOR)
     try:
         job = create_comparison_job(
             session,
@@ -52,11 +66,13 @@ def start_comparison(
 def get_comparison(
     job_id: uuid.UUID,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> ComparisonJobResponse:
     try:
         job = get_comparison_job(session, job_id)
     except CompareError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    require_workspace_role(auth, job.workspace_id, WorkspaceRole.VIEWER)
     return ComparisonJobResponse(
         id=job.id,
         workspace_id=job.workspace_id,
@@ -80,11 +96,26 @@ def patch_change_decision(
     change_id: uuid.UUID,
     body: DecideChangeRequest,
     session: Session = Depends(get_session),
+    auth: AuthContext = Depends(require_api_key),
 ) -> RequirementChangeResponse:
+    change = session.get(RequirementChange, change_id)
+    if change is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Change not found")
+    job = get_comparison_job(session, change.comparison_job_id)
+    require_workspace_role(auth, job.workspace_id, WorkspaceRole.EDITOR)
     try:
-        change = decide_change(session, change_id, decision=body.decision)
+        updated = decide_change(session, change_id, decision=body.decision)
     except CompareError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return RequirementChangeResponse.model_validate(change)
+    if body.decision == "confirmed":
+        record_audit(
+            session,
+            auth=auth,
+            action="comparison.change_confirm",
+            workspace_id=job.workspace_id,
+            resource_type="requirement_change",
+            resource_id=updated.id,
+        )
+    return RequirementChangeResponse.model_validate(updated)
