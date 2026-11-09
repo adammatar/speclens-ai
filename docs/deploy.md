@@ -30,8 +30,21 @@ EMBEDDING_BACKEND=stub
 EXTRACTION_BACKEND=stub
 ```
 
-3. Restart the stack so containers pick up env: `make down && make up && make smoke`
-4. Confirm Dashboard shows `generation` backend `openai_compat`, then ask Cited chat questions.
+3. Confirm these four lines are **uncommented and set** (not left as comments / not `stub`):
+
+```bash
+grep -E '^(OPENAI_API_KEY|OPENAI_BASE_URL|GENERATION_BACKEND|GENERATION_MODEL)=' .env | sed 's/\(OPENAI_API_KEY=\).*/\1***/'
+```
+
+4. Recreate containers so they reload `.env`: `make down && make up && make smoke`
+5. Confirm Dashboard shows `stub/openai_compat/stub` (embedding / generation / extraction).
+6. Verify inside the API container:
+
+```bash
+docker compose --env-file .env -f infra/compose.yaml exec api printenv GENERATION_BACKEND
+```
+
+Should print `openai_compat`.
 
 Rate limits apply on the free tier; if requests fail, wait and retry or check AI Studio quotas.
 

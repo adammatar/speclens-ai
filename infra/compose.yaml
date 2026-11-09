@@ -31,8 +31,9 @@ services:
     build:
       context: ..
       dockerfile: services/api/Dockerfile
+    # Load repo-root .env directly (make up creates it from .env.example if missing).
     env_file:
-      - ../.env.example
+      - ../.env
     environment:
       DATABASE_URL: postgresql+psycopg://speclens:speclens_dev_password@postgres:5432/speclens
       REDIS_URL: redis://redis:6379/0
@@ -40,12 +41,6 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       STORAGE_LOCAL_ROOT: /data/storage
       SPECLENS_ENV: local
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      GENERATION_BACKEND: ${GENERATION_BACKEND:-stub}
-      GENERATION_MODEL: ${GENERATION_MODEL:-speclens-stub-qa-v1}
-      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-stub}
-      EXTRACTION_BACKEND: ${EXTRACTION_BACKEND:-stub}
     ports:
       - "8000:8000"
     volumes:
@@ -70,7 +65,7 @@ services:
       context: ..
       dockerfile: workers/Dockerfile
     env_file:
-      - ../.env.example
+      - ../.env
     environment:
       DATABASE_URL: postgresql+psycopg://speclens:speclens_dev_password@postgres:5432/speclens
       REDIS_URL: redis://redis:6379/0
@@ -78,12 +73,6 @@ services:
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       STORAGE_LOCAL_ROOT: /data/storage
       SPECLENS_ENV: local
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      GENERATION_BACKEND: ${GENERATION_BACKEND:-stub}
-      GENERATION_MODEL: ${GENERATION_MODEL:-speclens-stub-qa-v1}
-      EMBEDDING_BACKEND: ${EMBEDDING_BACKEND:-stub}
-      EXTRACTION_BACKEND: ${EXTRACTION_BACKEND:-stub}
     volumes:
       - ../data/storage:/data/storage
     depends_on:
