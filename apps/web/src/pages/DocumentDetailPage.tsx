@@ -7,7 +7,7 @@ import {
   uploadDocumentVersion,
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { formatBytes, statusLabel } from "../lib/format";
+import { formatBytes, isDocReady, statusLabel } from "../lib/format";
 import { useLocale } from "../lib/i18n";
 import { runPostIngestPipeline, waitForJob } from "../lib/pipeline";
 import type { Chunk, DocumentDetail } from "../lib/types";
@@ -134,7 +134,7 @@ export function DocumentDetailPage() {
               </strong>
               <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
                 {v.filename} · {formatBytes(v.byte_size)} ·{" "}
-                <span className={`badge ${v.status === "succeeded" ? "ready" : "busy"}`}>
+                <span className={`badge ${isDocReady(v.status) ? "ready" : "busy"}`}>
                   {statusLabel(v.status)}
                 </span>
                 {idx === 0 && previous ? t("detail.kept") : null}
