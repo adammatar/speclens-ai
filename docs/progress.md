@@ -71,14 +71,14 @@ alembic current                   -> 20261108_0006 (head)
 python3 -m pytest -q              -> 34 passed, 0 failed (exit 0)
 Live compose re-smoke             -> compare succeeded; confirm marks eval
                                      -> REVERIFY6_SMOKE_OK
-CI (initial push aec7e71)         -> FAILED: invalid workflow YAML
-                                     (multiline python -c broke .github/workflows/ci.yml)
-CI fix                            -> collapsed assert to one line; yaml_ok locally
+CI (aec7e71)                      -> FAILED: invalid workflow YAML (multiline python -c)
+CI (2acd908)                      -> FAILED: Ruff E501 on workers Celery decorator
+CI (621251b)                      -> SUCCESS: Lint/typecheck/pytest + Compose smoke
 ```
 
 **Local test failures:** none.
 
-**CI note:** First Phase 6 push failed immediately (0s, no jobs) due to a YAML parse error in the compose-smoke step. Fix included in this re-verification commit; watching CI on the follow-up push.
+**CI note:** Workflow YAML fixed, then Ruff E501 on `speclens.compare_document_versions` decorator fixed via format wrap. Head CI green.
 
 ### Explicit stop
 
