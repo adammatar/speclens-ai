@@ -28,4 +28,14 @@ Unsupported answers can no longer be marked `completed` when retrieval returned 
 - Redis-backed rate limits in hosted mode; local memory fallback when Redis is down.
 - CLI: `keys create|list|disable|rotate` (hash-at-rest; plaintext once).
 
-Remaining phases (3–8): real eval runner, product UI, retention/observability, docs, security automation, portfolio media — in progress.
+### Phase 3 — Real evaluation harness — COMPLETE
+
+**Date:** 2026-11-10
+
+- Gold datasets no longer contain `predicted_*` values.
+- Runtime pipeline (ingest → embed → search → QA/extract/compare) produces predictions.
+- Stub mode enforced in CI with Postgres service; live mode optional.
+- Regression test: deliberately bad retrieval fails Recall@10 and `--enforce`.
+- Reports badge stub/synthetic results and record backends, commit, latencies.
+
+Remaining phases (4–8): product UI, retention/observability, docs, security automation, portfolio media — in progress.

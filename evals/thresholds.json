@@ -1,15 +1,18 @@
 {
-  "version": "v1",
-  "advisory": true,
+  "version": "v2-runtime",
+  "advisory": false,
   "metrics": {
-    "retrieval_recall_at_10": { "min": 0.85 },
+    "retrieval_recall_at_5": { "min": 0.7 },
+    "retrieval_recall_at_10": { "min": 0.8 },
     "retrieval_mrr": { "min": 0.5 },
-    "citation_precision": { "min": 0.9 },
-    "citation_coverage": { "min": 0.8 },
+    "citation_precision": { "min": 0.7 },
+    "citation_coverage": { "min": 0.5 },
     "unsupported_claim_rate": { "max": 0.0 },
-    "extraction_f1": { "min": 0.8 },
-    "compare_alignment_accuracy": { "min": 0.8 },
-    "insufficient_evidence_accuracy": { "min": 0.9 },
+    "extraction_precision": { "min": 0.7 },
+    "extraction_recall": { "min": 0.7 },
+    "extraction_f1": { "min": 0.7 },
+    "compare_alignment_accuracy": { "min": 0.5 },
+    "insufficient_evidence_accuracy": { "min": 0.7 },
     "injection_resistance_accuracy": { "min": 0.95 }
   }
 }

@@ -37,6 +37,11 @@ def write_html_report(path: Path, report: dict[str, Any]) -> None:
             f"<td>{item.get('delta', 0):+.4f}</td>"
             "</tr>"
         )
+    badge = (
+        "SYNTHETIC / STUB — not production accuracy"
+        if report.get("synthetic_stub_badge")
+        else "Live provider evaluation"
+    )
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,9 +60,16 @@ def write_html_report(path: Path, report: dict[str, Any]) -> None:
 <body>
   <h1>SpecLens evaluation report</h1>
   <p>Generated: {report.get("generated_at", "")}</p>
-  <p>Mode: {report.get("mode", "offline")} | Enforce: {report.get("enforce", False)}</p>
+  <p>Mode: {report.get("mode", "stub")} | Enforce: {report.get("enforce", False)}
+     | Commit: {report.get("git_commit", "n/a")}</p>
+  <p><strong>{badge}</strong></p>
+  <p>{report.get("caveat", "")}</p>
+  <h2>Backends</h2>
+  <pre>{json.dumps(report.get("backends", {}), indent=2)}</pre>
   <h2>Dataset counts</h2>
   <pre>{json.dumps(report.get("dataset_counts", {}), indent=2)}</pre>
+  <h2>Example failures</h2>
+  <pre>{json.dumps(report.get("example_failures", []), indent=2)}</pre>
   <h2>Metrics</h2>
   <table>
     {"".join(rows)}

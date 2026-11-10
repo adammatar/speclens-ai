@@ -1,12 +1,12 @@
-{"gold_insufficient_evidence": true, "id": "ie-000", "predicted_insufficient_evidence": true, "question": "Unsupported question 0?"}
-{"gold_insufficient_evidence": true, "id": "ie-001", "predicted_insufficient_evidence": false, "question": "Unsupported question 1?"}
-{"gold_insufficient_evidence": false, "id": "ie-002", "predicted_insufficient_evidence": false, "question": "Unsupported question 2?"}
-{"gold_insufficient_evidence": true, "id": "ie-003", "predicted_insufficient_evidence": true, "question": "Unsupported question 3?"}
-{"gold_insufficient_evidence": false, "id": "ie-004", "predicted_insufficient_evidence": false, "question": "Unsupported question 4?"}
-{"gold_insufficient_evidence": false, "id": "ie-005", "predicted_insufficient_evidence": false, "question": "Unsupported question 5?"}
-{"gold_insufficient_evidence": true, "id": "ie-006", "predicted_insufficient_evidence": true, "question": "Unsupported question 6?"}
-{"gold_insufficient_evidence": false, "id": "ie-007", "predicted_insufficient_evidence": false, "question": "Unsupported question 7?"}
-{"gold_insufficient_evidence": false, "id": "ie-008", "predicted_insufficient_evidence": false, "question": "Unsupported question 8?"}
-{"gold_insufficient_evidence": true, "id": "ie-009", "predicted_insufficient_evidence": true, "question": "Unsupported question 9?"}
-{"gold_insufficient_evidence": false, "id": "ie-010", "predicted_insufficient_evidence": false, "question": "Unsupported question 10?"}
-{"gold_insufficient_evidence": false, "id": "ie-011", "predicted_insufficient_evidence": false, "question": "Unsupported question 11?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-000", "question": "What is the capital of France according to the specification?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-001", "question": "How many calories are in synthetic bread?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-002", "question": "What is the weather forecast for Mars?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-003", "question": "Who won the 1998 World Cup according to this spec?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-004", "question": "What is the retail price of the product?"}
+{"corpus": "unrelated_noise.md", "gold_insufficient_evidence": true, "id": "ie-005", "question": "Describe the company vacation policy."}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-006", "question": "What shall the system require for administrative multi-factor authentication?"}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-007", "question": "How shall the system detect duplicate uploads?"}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-008", "question": "What retention period shall apply to source document bytes?"}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-009", "question": "Shall the system store API keys as hashes?"}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-010", "question": "What search hit limit shall the system return?"}
+{"corpus": "eval_spec_v1.md", "gold_insufficient_evidence": false, "id": "ie-011", "question": "Shall inactive sessions expire after thirty minutes?"}
