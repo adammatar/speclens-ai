@@ -268,7 +268,12 @@ export function RequirementsPage() {
       ) : null}
 
       {filtered.length > 0 ? (
-        <div className="table-wrap" role="region" aria-label={t("req.title")}>
+        <div
+          className="table-wrap"
+          role="region"
+          aria-label={t("req.title")}
+          data-testid="requirements-table"
+        >
           <table className="data-table">
             <thead>
               <tr>
@@ -282,12 +287,16 @@ export function RequirementsPage() {
             </thead>
             <tbody>
               {filtered.map((req) => (
-                <tr key={req.id}>
+                <tr key={req.id} data-testid="requirement-row">
                   <td>{req.statement}</td>
                   <td>{req.requirement_type}</td>
                   <td>{req.review_state}</td>
-                  <td className="muted">{sourceQuote(req) || "—"}</td>
-                  <td className="muted">{sectionPath(req)}</td>
+                  <td className="muted" data-testid="requirement-quote">
+                    {sourceQuote(req) || "—"}
+                  </td>
+                  <td className="muted" data-testid="requirement-provenance">
+                    {sectionPath(req)}
+                  </td>
                   <td>
                     <div className="row wrap">
                       <button

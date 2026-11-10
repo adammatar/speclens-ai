@@ -148,10 +148,14 @@ export function ChatPanel({ selectedDocs, onToggleDoc, availableDocs }: Props) {
         ) : null}
 
         {messages.map((m) => (
-          <div key={m.id} className={`bubble ${m.role === "user" ? "user" : "assistant"}`}>
+          <div
+            key={m.id}
+            className={`bubble ${m.role === "user" ? "user" : "assistant"}`}
+            data-testid={m.role === "assistant" ? "chat-assistant-bubble" : "chat-user-bubble"}
+          >
             {m.role === "assistant" ? humanizeAnswer(m.content) : m.content}
             {m.role === "assistant" && m.citations?.length ? (
-              <div className="cite-note">
+              <div className="cite-note" data-testid="chat-citation">
                 {m.citations.length === 1
                   ? t("chat.citeOne", { n: 1 })
                   : t("chat.citeMany", { n: m.citations.length })}

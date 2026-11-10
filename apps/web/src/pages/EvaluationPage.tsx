@@ -89,7 +89,11 @@ export function EvaluationPage() {
           <p>{t("eval.subtitle")}</p>
         </div>
         {report.synthetic_stub_badge || report.mode === "stub" ? (
-          <span className="badge-stub" title={t("eval.stubCaveat")}>
+          <span
+            className="badge-stub"
+            data-testid="eval-stub-badge"
+            title={t("eval.stubCaveat")}
+          >
             {t("eval.stubBadge")}
           </span>
         ) : (
@@ -97,7 +101,7 @@ export function EvaluationPage() {
         )}
       </div>
 
-      <p className="muted" style={{ fontSize: "0.9rem" }}>
+      <p className="muted" style={{ fontSize: "0.9rem" }} data-testid="eval-stub-caveat">
         {t("eval.stubCaveat")}
       </p>
 
@@ -129,7 +133,12 @@ export function EvaluationPage() {
         </p>
       </div>
 
-      <div className="table-wrap" role="region" aria-label={t("eval.metrics")}>
+      <div
+        className="table-wrap"
+        role="region"
+        aria-label={t("eval.metrics")}
+        data-testid="eval-metrics-table"
+      >
         <table className="data-table">
           <thead>
             <tr>
@@ -145,11 +154,20 @@ export function EvaluationPage() {
               .map(([name, value]) => {
                 const gate = gates[name];
                 return (
-                  <tr key={name}>
+                  <tr key={name} data-testid="eval-metric-row">
                     <td>{name}</td>
                     <td>{typeof value === "number" ? value.toFixed(4) : String(value)}</td>
                     <td>{gate?.threshold ?? "—"}</td>
-                    <td className={gate?.status === "fail" ? "fail" : "pass"}>
+                    <td
+                      className={gate?.status === "fail" ? "fail" : "pass"}
+                      data-testid={
+                        gate?.status === "pass"
+                          ? "eval-gate-pass"
+                          : gate?.status === "fail"
+                            ? "eval-gate-fail"
+                            : "eval-gate-na"
+                      }
+                    >
                       {gate?.status ?? "n/a"}
                     </td>
                   </tr>

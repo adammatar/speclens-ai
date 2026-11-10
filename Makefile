@@ -20,7 +20,7 @@ help:
 	@echo "  make eval       Run offline evaluation harness (JSON + HTML reports)"
 	@echo "  make web        Run React+Vite dev server"
 	@echo "  make web-build  Production build of apps/web"
-	@echo "  make demo-reset Reset default workspace and re-seed sample.md"
+	@echo "  make demo-reset Reset workspace: Demo Sample Spec v1+v2, extract, compare"
 	@echo "  make bootstrap-local  Seed local/CI API key (never in production)"
 	@echo "  make portfolio-media  Playwright screenshots + demo video"
 	@echo "  make playwright-smoke  Route smoke (requires web+API)"
