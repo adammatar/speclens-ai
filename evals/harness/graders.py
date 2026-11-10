@@ -77,8 +77,10 @@ def grade_extraction(rows: list[dict[str, Any]]) -> dict[str, float]:
         # contains-mode softens exact set equality already at prediction time.
         if row.get("match_mode") == "contains":
             # predicted set was rewritten to gold wording on hits; empty = miss.
-            hit = 1.0 if predicted and gold and predicted & gold == gold else (
-                1.0 if predicted & gold else 0.0
+            hit = (
+                1.0
+                if predicted and gold and predicted & gold == gold
+                else (1.0 if predicted & gold else 0.0)
             )
             f1s.append(hit)
             precs.append(hit)
@@ -151,11 +153,15 @@ def _statement_compare_accuracy(
             p_base = _norm(pred.get("base_statement") or "")
             p_target = _norm(pred.get("target_statement") or "")
             p_cat = str(pred.get("category") or "")
-            base_ok = (not g_base and not p_base) or (g_base and g_base in p_base) or (
-                p_base and p_base in g_base
+            base_ok = (
+                (not g_base and not p_base)
+                or (g_base and g_base in p_base)
+                or (p_base and p_base in g_base)
             )
-            target_ok = (not g_target and not p_target) or (g_target and g_target in p_target) or (
-                p_target and p_target in g_target
+            target_ok = (
+                (not g_target and not p_target)
+                or (g_target and g_target in p_target)
+                or (p_target and p_target in g_target)
             )
             # Category may soft-match clarified vs behavior_changed for near edits.
             cat_ok = p_cat == g_cat or (

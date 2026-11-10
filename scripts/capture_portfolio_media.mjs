@@ -110,19 +110,36 @@ async function main() {
   await page.waitForTimeout(800);
   await shot(page, "05-chat.webp");
 
+  // --- Requirements workspace ---
+  await page.click('a[href="/requirements"]');
+  await page.waitForSelector("h1");
+  await page.waitForTimeout(600);
+  await shot(page, "06-requirements.webp");
+
+  // --- Version compare workspace ---
+  await page.click('a[href="/compare"]');
+  await page.waitForSelector("h1");
+  await page.waitForTimeout(600);
+  await shot(page, "07-compare.webp");
+
+  // --- Evaluation dashboard ---
+  await page.click('a[href="/evaluation"]');
+  await page.waitForSelector("h1");
+  await page.waitForTimeout(600);
+  await shot(page, "08-evaluation.webp");
+
   // --- Settings ---
   await page.click('a[href="/settings"]');
-  await page.waitForSelector("text=Settings");
+  await page.waitForSelector("h1");
   await page.waitForTimeout(400);
-  await shot(page, "06-settings.webp");
+  await shot(page, "09-settings.webp");
 
-  // --- Hebrew UI (sign-out not required; toggle from settings or top bar) ---
+  // --- Hebrew RTL screen ---
   const langToggle = page.locator("button.lang-toggle").first();
   if (await langToggle.count()) {
     await langToggle.click();
     await page.waitForTimeout(500);
-    await shot(page, "07-hebrew-ui.webp");
-    // Toggle back for clean English video ending
+    await shot(page, "10-hebrew-ui.webp");
     await langToggle.click();
     await page.waitForTimeout(300);
   }

@@ -118,9 +118,7 @@ def test_retention_dry_run_and_execute(db_session: Session, tmp_path: Path) -> N
     assert dry.deleted_ids == []
     assert db_session.get(Document, old.id) is not None
 
-    executed = run_retention_sweep(
-        db_session, dry_run=False, settings=settings, storage=storage
-    )
+    executed = run_retention_sweep(db_session, dry_run=False, settings=settings, storage=storage)
     assert old.id in executed.deleted_ids
     assert db_session.get(Document, old.id) is None
 

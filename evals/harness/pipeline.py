@@ -181,9 +181,7 @@ def _ingest_corpus(ctx: PipelineContext, filename: str) -> uuid.UUID:
         storage=ctx.storage,
     )
     run_ingestion_job(ctx.session, upload.job_id, storage=ctx.storage)
-    run_embed_document_version(
-        ctx.session, upload.document_version_id, settings=ctx.settings
-    )
+    run_embed_document_version(ctx.session, upload.document_version_id, settings=ctx.settings)
     ctx.latencies_ms.append((time.perf_counter() - started) * 1000.0)
 
     ctx.version_by_corpus[filename] = upload.document_version_id
@@ -266,9 +264,7 @@ def predict_qa(ctx: PipelineContext, row: dict[str, Any]) -> dict[str, Any]:
 
     allowlisted = _map_ranked(ctx, corpus, list(turn.retrieved_chunk_ids))
     citations = _map_ranked(ctx, corpus, list(turn.citation_chunk_ids))
-    status_value = (
-        turn.status.value if hasattr(turn.status, "value") else str(turn.status)
-    )
+    status_value = turn.status.value if hasattr(turn.status, "value") else str(turn.status)
     insufficient = status_value == MessageStatus.INSUFFICIENT_EVIDENCE.value
     return {
         **row,
@@ -418,9 +414,7 @@ def predict_insufficient(ctx: PipelineContext, row: dict[str, Any]) -> dict[str,
             settings=ctx.settings,
         )
         ctx.latencies_ms.append((time.perf_counter() - started) * 1000.0)
-        status_value = (
-            turn.status.value if hasattr(turn.status, "value") else str(turn.status)
-        )
+        status_value = turn.status.value if hasattr(turn.status, "value") else str(turn.status)
         return {
             **row,
             "predicted_insufficient_evidence": status_value

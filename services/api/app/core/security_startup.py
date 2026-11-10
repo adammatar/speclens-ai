@@ -46,9 +46,7 @@ def assert_safe_for_hosted(settings: Settings, session: Session | None = None) -
 
     password = _password_from_database_url(settings.database_url)
     if password is None or password in KNOWN_INSECURE_PASSWORDS:
-        errors.append(
-            "DATABASE_URL must use a non-development password in hosted/production mode"
-        )
+        errors.append("DATABASE_URL must use a non-development password in hosted/production mode")
 
     if session is not None and local_bootstrap_key_is_active(session):
         errors.append(

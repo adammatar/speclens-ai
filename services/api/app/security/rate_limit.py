@@ -11,6 +11,7 @@ import logging
 import time
 from collections import defaultdict, deque
 from threading import Lock
+from typing import Any
 
 from fastapi import HTTPException, Request, status
 
@@ -35,7 +36,7 @@ def _client_fingerprint(request: Request) -> str:
     return f"ip:{host}"
 
 
-def _get_redis():  # noqa: ANN202
+def _get_redis() -> Any:
     global _redis_client, _redis_failed
     if _redis_failed:
         return None
@@ -56,7 +57,7 @@ def _get_redis():  # noqa: ANN202
 
 
 def _check_redis(bucket: str, fingerprint: str, limit: int) -> None:
-    client = _get_redis()
+    client: Any = _get_redis()
     if client is None:
         raise RuntimeError("redis unavailable")
     key = f"speclens:ratelimit:{bucket}:{fingerprint}"

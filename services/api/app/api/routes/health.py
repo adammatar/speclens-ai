@@ -56,8 +56,7 @@ def ready(response: Response) -> dict[str, Any]:
         checks["redis"] = "down"
         # Local/test may run API without Redis; require Redis in hosted/production.
         require_redis = (
-            settings.speclens_deployment_mode == "hosted"
-            or settings.speclens_env == "production"
+            settings.speclens_deployment_mode == "hosted" or settings.speclens_env == "production"
         )
         if require_redis:
             ok = False

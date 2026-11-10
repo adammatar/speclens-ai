@@ -124,17 +124,17 @@ def run_eval(
             assert_no_prefilled_predictions(rows, path)
             dataset_counts[name] = len(rows)
 
-            predictor = retrieval_override if name == "retrieval" and retrieval_override else (
-                PREDICTORS[name]
+            predictor = (
+                retrieval_override
+                if name == "retrieval" and retrieval_override
+                else (PREDICTORS[name])
             )
             predicted_rows: list[dict[str, Any]] = []
             for row in rows:
                 try:
                     predicted_rows.append(predictor(ctx, row))
                 except Exception as exc:  # noqa: BLE001
-                    example_failures.append(
-                        {"suite": name, "id": row.get("id"), "error": str(exc)}
-                    )
+                    example_failures.append({"suite": name, "id": row.get("id"), "error": str(exc)})
                     # Leave without predictions so graders score a miss.
                     predicted_rows.append(dict(row))
 

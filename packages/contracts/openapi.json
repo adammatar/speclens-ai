@@ -37,7 +37,7 @@
           "health"
         ],
         "summary": "Ready",
-        "description": "Readiness probe - fails closed until the database is reachable.",
+        "description": "Readiness probe - fails closed until required dependencies are reachable.",
         "operationId": "ready_api_v1_ready_get",
         "responses": {
           "200": {

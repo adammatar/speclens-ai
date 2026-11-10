@@ -95,7 +95,7 @@ def init_sentry(*, dsn: str, environment: str, service: str) -> bool:
         dsn=dsn,
         environment=environment,
         send_default_pii=False,
-        before_send=before_send,
+        before_send=before_send,  # type: ignore[arg-type]
         integrations=integrations,
         traces_sample_rate=0.0,
     )

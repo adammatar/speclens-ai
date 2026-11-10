@@ -10,6 +10,8 @@ A full-stack portfolio project for technical specifications: upload Markdown/PDF
 | --- | --- |
 | ![Sign in](docs/portfolio/screenshots/01-signin.webp) | ![Home workspace](docs/portfolio/screenshots/02-home.webp) |
 | ![Documents](docs/portfolio/screenshots/03-documents.webp) | ![Cited chat](docs/portfolio/screenshots/05-chat.webp) |
+| ![Requirements](docs/portfolio/screenshots/06-requirements.webp) | ![Version compare](docs/portfolio/screenshots/07-compare.webp) |
+| ![Evaluation](docs/portfolio/screenshots/08-evaluation.webp) | ![Hebrew RTL](docs/portfolio/screenshots/10-hebrew-ui.webp) |
 
 [Architecture](#architecture) · [Quick start](#quick-start) · [Features](#features) · [Stack](#stack) · [Evaluation](#evaluation) · [Portfolio pack](docs/portfolio/) · [Security](#security--privacy)
 
@@ -51,8 +53,8 @@ Deep dive: [`docs/architecture.md`](docs/architecture.md) · ADR: [`docs/decisio
 | Data | Postgres 16 + pgvector (HNSW + FTS), local filesystem object store |
 | Web | React + Vite SPA — EN/HE i18n, session-only access key |
 | LLM | Pluggable stubs **or** OpenAI / Gemini (`openai_compat`) |
-| Quality | Ruff, mypy, pytest, Compose smoke, offline `make eval` |
-| Runtime | Docker Compose (dev + prod-style); Python ≥ 3.12, Node ≥ 22 |
+| Quality | Ruff, mypy, pytest, Compose smoke, runtime stub `make eval` |
+| Runtime | Docker Compose (dev + production-style); Python ≥ 3.12, Node ≥ 22 |
 
 ## Quick start
 
@@ -75,8 +77,7 @@ make web         # React UI → http://127.0.0.1:5173
 | API docs | http://127.0.0.1:8001/docs |
 | Health | http://127.0.0.1:8001/api/v1/health |
 
-Production-style stack (nginx web on `:8080`): `make up-prod`.  
-Ops & Gemini setup: [`docs/deploy.md`](docs/deploy.md).
+Production-style Compose stack (nginx web on `:8080`): `make up-prod` — requires strong secrets; see [`docs/deploy.md`](docs/deploy.md).
 
 ### Try Hebrew
 
@@ -86,25 +87,26 @@ Ops & Gemini setup: [`docs/deploy.md`](docs/deploy.md).
 
 ## Evaluation
 
-Offline graders run without paid LLM spend (stub backends + synthetic gold):
+The harness **runs the real SpecLens pipelines** on synthetic corpus fixtures (stub backends by default — no paid keys in CI):
 
 ```bash
 make eval
+make eval EVAL_ENFORCE=1   # CI-enforced thresholds
 ```
 
-Latest harness snapshot (see caveat in the write-up):
+Latest stub/synthetic snapshot (regression control, **not** production accuracy):
 
 | Metric | Value |
 | --- | --- |
 | Retrieval Recall@10 | 1.00 |
 | Citation precision | 1.00 |
-| Extraction F1 | 0.94 |
+| Extraction F1 | 1.00 |
 | Compare alignment | 1.00 |
 | Injection resistance | 1.00 |
 
-Full table + methodology: [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md) · [`docs/evaluation.md`](docs/evaluation.md)
+Methodology + caveats: [`docs/evaluation.md`](docs/evaluation.md) · [`docs/portfolio/write-up.md`](docs/portfolio/write-up.md)
 
-> Stub backends + synthetic fixtures inflate absolute scores vs production LLM traffic. The harness is for **regression control**, not marketing accuracy claims.
+Product surfaces for inspection: **Requirements**, **Compare**, and **Evaluation** in the web app (screenshots in [`docs/portfolio/`](docs/portfolio/) after `make portfolio-media`).
 
 ## Security & privacy
 

@@ -4,24 +4,19 @@
 
 | Zone | Trust | Notes |
 | --- | --- | --- |
-| Browser / Nuxt UI | Untrusted | No secrets; sessions/tokens only |
-| Electron shell (future optional) | Semi-trusted local | Same as today: contextIsolation, no nodeIntegration |
+| Browser / React + Vite SPA | Untrusted | No secrets; sessionStorage access key only |
 | FastAPI API | Trusted compute | Enforces workspace ACL |
 | Workers | Trusted compute | Same secrets plane as API |
 | Postgres / Redis / object store | Trusted data plane | Encrypted at rest in hosted deployments |
-| OpenAI API | External processor | Document excerpts leave the trust boundary when AI features are used |
+| OpenAI / compatible APIs | External processor | Document excerpts leave the trust boundary when AI features are used |
 | Uploaded documents | **Untrusted data** | Never treat document text as instructions |
 
-## Boundaries carried forward from Local Docs Viewer
+## Local mode expectations
 
-Existing app strengths to keep as requirements for **local mode**:
-
-- Source files are not committed to git (gitignore `*.docx` etc.)
-- No analytics/telemetry by default
-- Parsed caches are user-local and deletable
-- Read-only viewing of source Word files
-
-SpecLens hosted mode necessarily introduces upload and cloud processing; that must be explicit in UX copy (contrast with "No upload" welcome screen today).
+- Source customer files are not committed to git
+- No analytics/telemetry by default unless `SENTRY_DSN` is set (redacted)
+- Object storage is local filesystem under `data/storage/`
+- Hosted mode necessarily introduces upload and cloud processing; that must be explicit in UX copy
 
 ## Data classification
 
@@ -43,7 +38,7 @@ Logs may contain IDs, timings, token counts, model names - **not** raw document 
 
 - **API keys:** `Authorization: Bearer <key>` or `X-API-Key: <key>`. Keys are stored as SHA-256 hashes (`api_keys.key_hash`); plaintext is never persisted and must not appear in logs.
 - **Roles:** `owner` > `editor` > `viewer` via `workspace_memberships`.
-- **Public routes:** `/api/v1/health` and `/api/v1/ready` only (see also `/api/v1/meta` if exposed — never secrets).
+- **Public routes:** `/api/v1/health`, `/api/v1/ready`, and `/api/v1/meta` (non-secret runtime metadata only — version, backends, retention days, auth_required flag). `/meta` stays public so the Settings page can render without a key; it must never include secrets or DSNs.
 - **Local/CI bootstrap:** schema migrations do **not** activate the known public key. Local Compose and CI run `python -m app.cli bootstrap-local` (or `make bootstrap-local`) to activate `speclens-local-dev-key` for the default workspace owner. Production Compose must never run bootstrap-local.
 - **Production key lifecycle:**
   - Create: `python -m app.cli keys create --email you@example.com --name prod` (plaintext shown once).
@@ -124,8 +119,8 @@ Logs may contain IDs, timings, token counts, model names - **not** raw document 
 
 ## Threats to track
 
-- XSS via rendered document HTML (`v-html` pattern in current viewer)
-- Path traversal on file/object keys (current Electron protocol already guards static root)
+- XSS if document previews ever render unsanitized HTML (current React UI uses text nodes / plain excerpts)
+- Path traversal on object-store keys
 - Tenant confusion / IDOR on document and chat IDs
 - Prompt injection via malicious specs
 - Secret leakage into frontend bundles or CI logs

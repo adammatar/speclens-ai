@@ -79,9 +79,7 @@ def run_retention_sweep(
     now: datetime | None = None,
 ) -> RetentionSweepResult:
     cfg = settings or get_settings()
-    candidates = find_expired_documents(
-        session, retention_days=cfg.retention_days, now=now
-    )
+    candidates = find_expired_documents(session, retention_days=cfg.retention_days, now=now)
     cutoff = (now or datetime.now(UTC)) - timedelta(days=cfg.retention_days)
     deleted: list[uuid.UUID] = []
     errors: list[str] = []

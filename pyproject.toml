@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Evaluation-driven AI platform for technical specifications"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Proprietary" }
+license = "MIT"
+license-files = ["LICENSE"]
 
 [tool.ruff]
 target-version = "py312"
@@ -41,4 +42,15 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["services/api/app", "workers/speclens_worker"]
-omit = ["*/migrations/*"]
+omit = [
+  "*/migrations/*",
+  "*/tests/*",
+  "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+]
+skip_empty = true

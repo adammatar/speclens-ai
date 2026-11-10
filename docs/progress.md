@@ -55,4 +55,22 @@ Unsupported answers can no longer be marked `completed` when retrieval returned 
 - Optional Sentry for API/workers with redaction; `X-Request-ID` correlation middleware.
 - Readiness checks Redis in hosted mode; backup verify script uses an isolated DB.
 
-Remaining phases (6–8): docs/metadata, security automation, portfolio media — in progress.
+### Phase 6 — Documentation & metadata — COMPLETE
+
+**Date:** 2026-11-10
+
+- MIT license metadata (PEP 621), security/deploy/evaluation/README/portfolio aligned with code.
+
+### Phase 7 — Dependency & security automation — COMPLETE
+
+**Date:** 2026-11-10
+
+- Dependabot, SECURITY.md, CI security job (pip-audit, npm audit high+, gitleaks, Trivy), coverage gate.
+
+### Phase 8 — Portfolio media refresh — COMPLETE
+
+**Date:** 2026-11-10
+
+- Portfolio screenshots + walkthrough regenerated (sign-in through Evaluation + Hebrew RTL).
+- README links updated for Requirements / Compare / Evaluation screens.
+
