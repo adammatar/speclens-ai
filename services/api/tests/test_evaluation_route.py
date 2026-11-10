@@ -1,16 +1,32 @@
-"""Evaluation report API tests."""
+"""Evaluation report API tests (no Postgres required)."""
 
 from __future__ import annotations
 
 import json
+import uuid
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.db.models import WorkspaceRole
+from app.security.auth import AuthContext, require_api_key
+
+
+def _fake_auth() -> AuthContext:
+    return AuthContext(
+        user_id=uuid.UUID("00000000-0000-4000-8000-000000000099"),
+        email="test@speclens.local",
+        api_key_id=uuid.UUID("00000000-0000-4000-8000-000000000098"),
+        memberships={
+            uuid.UUID("00000000-0000-4000-8000-000000000001"): WorkspaceRole.OWNER,
+        },
+    )
+
 
 @pytest.fixture
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     report = {
         "mode": "stub",
         "synthetic_stub_badge": True,
@@ -26,8 +42,12 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     from app.main import create_app
 
     get_settings.cache_clear()
-    with TestClient(create_app()) as test_client:
+    app = create_app()
+    # File-based endpoint tests must not require Postgres for auth bypass lookups.
+    app.dependency_overrides[require_api_key] = _fake_auth
+    with TestClient(app) as test_client:
         yield test_client
+    app.dependency_overrides.clear()
     get_settings.cache_clear()
 
 
@@ -49,7 +69,10 @@ def test_missing_evaluation_report(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     from app.main import create_app
 
     get_settings.cache_clear()
-    with TestClient(create_app()) as client:
+    app = create_app()
+    app.dependency_overrides[require_api_key] = _fake_auth
+    with TestClient(app) as client:
         response = client.get("/api/v1/evaluation/latest")
         assert response.status_code == 404
+    app.dependency_overrides.clear()
     get_settings.cache_clear()
