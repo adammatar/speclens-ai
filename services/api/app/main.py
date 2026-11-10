@@ -15,6 +15,7 @@ from app.api.routes import (
     comparisons,
     conversations,
     documents,
+    evaluation,
     health,
     meta,
     requirements,
@@ -22,6 +23,8 @@ from app.api.routes import (
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.observability.correlation import CorrelationIdMiddleware
+from app.observability.sentry import init_sentry
 
 
 @asynccontextmanager
@@ -29,8 +32,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     import logging
     import os
 
+    from app.core.security_startup import assert_safe_for_hosted
+    from app.db.session import SessionLocal
+
     settings = get_settings()
     configure_logging(settings.speclens_log_level)
+    init_sentry(
+        dsn=settings.sentry_dsn,
+        environment=settings.speclens_env,
+        service="api",
+    )
     logging.getLogger(__name__).info(
         "speclens_backends embedding=%s generation=%s/%s extraction=%s env_generation=%s",
         settings.embedding_backend,
@@ -39,6 +50,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         settings.extraction_backend,
         os.environ.get("GENERATION_BACKEND"),
     )
+    session = SessionLocal()
+    try:
+        assert_safe_for_hosted(settings, session)
+    finally:
+        session.close()
     yield
 
 
@@ -59,6 +75,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    application.add_middleware(CorrelationIdMiddleware)
     application.include_router(health.router, prefix="/api/v1")
     application.include_router(meta.router, prefix="/api/v1")
     application.include_router(documents.router, prefix="/api/v1")
@@ -66,6 +83,7 @@ def create_app() -> FastAPI:
     application.include_router(conversations.router, prefix="/api/v1")
     application.include_router(requirements.router, prefix="/api/v1")
     application.include_router(comparisons.router, prefix="/api/v1")
+    application.include_router(evaluation.router, prefix="/api/v1")
 
     def custom_openapi() -> dict[str, Any]:
         if application.openapi_schema:

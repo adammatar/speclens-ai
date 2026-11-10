@@ -43,3 +43,8 @@ def get_session() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
+
+
+def SessionLocal() -> Session:
+    """Create a short-lived session for CLI / startup checks."""
+    return get_session_factory()()

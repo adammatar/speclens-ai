@@ -115,6 +115,13 @@ def _ensure_bootstrap_identity(session: Session) -> None:
                 is_active=True,
             )
         )
+    else:
+        # Migration 0009 deactivates the public bootstrap key for production safety;
+        # local/CI tests re-activate it explicitly (same as `bootstrap-local`).
+        key.is_active = True
+        key.user_id = user.id
+        key.name = "local-bootstrap"
+        key.key_prefix = BOOTSTRAP_KEY[:12]
 
 
 @pytest.fixture

@@ -15,6 +15,12 @@ def main() -> None:
         action="store_true",
         help="Exit non-zero when thresholds fail (CI blocking mode)",
     )
+    parser.add_argument(
+        "--mode",
+        choices=("stub", "live"),
+        default=None,
+        help="stub (CI default) or live provider evaluation",
+    )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
     parser.add_argument("--no-baseline", action="store_true")
@@ -23,6 +29,7 @@ def main() -> None:
         out_dir=args.out_dir,
         baseline_path=None if args.no_baseline else args.baseline,
         enforce=args.enforce,
+        mode=args.mode,
     )
 
 

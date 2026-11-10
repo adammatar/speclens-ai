@@ -1,16 +1,5 @@
 {
-  "version": "baseline_v1",
-  "metrics": {
-    "citation_coverage": 0.975,
-    "citation_precision": 1.0,
-    "compare_alignment_accuracy": 1.0,
-    "extraction_f1": 0.9375,
-    "injection_resistance_accuracy": 1.0,
-    "insufficient_evidence_accuracy": 0.9166666666666666,
-    "retrieval_mrr": 0.9625,
-    "retrieval_recall_at_10": 1.0,
-    "unsupported_claim_rate": 0.0
-  },
+  "caveat": "Generated from stub/synthetic runtime evaluation; not production accuracy.",
   "dataset_counts": {
     "compare": 12,
     "extraction": 24,
@@ -18,5 +7,22 @@
     "insufficient_evidence": 12,
     "qa_citations": 20,
     "retrieval": 40
-  }
+  },
+  "dataset_version": "v1-runtime",
+  "metrics": {
+    "citation_coverage": 1.0,
+    "citation_precision": 1.0,
+    "compare_alignment_accuracy": 1.0,
+    "extraction_f1": 1.0,
+    "extraction_precision": 1.0,
+    "extraction_recall": 1.0,
+    "injection_resistance_accuracy": 1.0,
+    "insufficient_evidence_accuracy": 1.0,
+    "retrieval_mrr": 1.0,
+    "retrieval_recall_at_10": 1.0,
+    "retrieval_recall_at_5": 1.0,
+    "unsupported_claim_rate": 0.0
+  },
+  "mode": "stub",
+  "version": "baseline_v1"
 }

@@ -24,8 +24,9 @@ export function SettingsPage() {
 
       <div className="version-card" style={{ display: "block" }}>
         <div className="field">
-          <label>{t("settings.language")}</label>
+          <label htmlFor="settings-lang">{t("settings.language")}</label>
           <select
+            id="settings-lang"
             value={locale}
             onChange={(e) => setLocale(e.target.value as Locale)}
           >
@@ -37,8 +38,8 @@ export function SettingsPage() {
 
       <div className="version-card" style={{ display: "block" }}>
         <div className="field">
-          <label>{t("settings.sessionKey")}</label>
-          <input readOnly value={apiKey ? "••••••••••••••••" : ""} />
+          <label htmlFor="settings-key">{t("settings.sessionKey")}</label>
+          <input id="settings-key" readOnly value={apiKey ? "••••••••••••••••" : ""} />
         </div>
         <p className="muted" style={{ marginTop: "0.75rem", fontSize: "0.85rem" }}>
           {t("settings.sessionHint")}
@@ -46,15 +47,40 @@ export function SettingsPage() {
       </div>
 
       <div className="version-card" style={{ display: "block" }}>
-        <strong>{t("settings.runtime")}</strong>
+        <strong>{t("settings.deployment")}</strong>
         <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
-          Version {meta?.version ?? "…"} · mode {meta?.deployment_mode ?? "…"}
-          <br />
+          {meta?.deployment_mode ?? "…"} · version {meta?.version ?? "…"}
+        </p>
+      </div>
+
+      <div className="version-card" style={{ display: "block" }}>
+        <strong>{t("settings.authState")}</strong>
+        <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
+          {meta?.auth_required ? t("settings.authRequired") : t("settings.authOpen")}
+        </p>
+      </div>
+
+      <div className="version-card" style={{ display: "block" }}>
+        <strong>{t("settings.providers")}</strong>
+        <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
           Embeddings {meta?.embedding_backend ?? "…"} · Generation{" "}
           {meta?.generation_backend ?? "…"} · Extraction {meta?.extraction_backend ?? "…"}
+        </p>
+      </div>
+
+      <div className="version-card" style={{ display: "block" }}>
+        <strong>{t("settings.retention")}</strong>
+        <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
+          {meta?.retention_days ?? "—"} days
           <br />
-          Retention {meta?.retention_days ?? "—"} days · Auth{" "}
-          {meta?.auth_required ? t("settings.authRequired") : t("settings.authOpen")}
+          {t("settings.retentionHint")}
+        </p>
+      </div>
+
+      <div className="version-card" style={{ display: "block" }}>
+        <strong>{t("settings.securityLimits")}</strong>
+        <p className="muted" style={{ marginTop: 8, fontSize: "0.9rem" }}>
+          {t("settings.securityBody")}
         </p>
       </div>
     </div>

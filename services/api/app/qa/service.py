@@ -21,6 +21,7 @@ from app.db.models import (
 )
 from app.generation.citations import filter_citations
 from app.generation.factory import get_generator
+from app.qa.citation_policy import resolve_answer_status
 from app.qa.context import assemble_context, evidence_is_sufficient
 from app.retrieval.search import SearchError
 
@@ -243,28 +244,37 @@ def post_user_message(
     assistant.prompt_tokens = result.prompt_tokens
     assistant.completion_tokens = result.completion_tokens
     assistant.latency_ms = int((time.perf_counter() - started) * 1000)
-    assistant.content = result.content
-    if result.insufficient_evidence or not safe_citations:
-        # If model abstains or all citations were stripped and answer isn't grounded, mark IE.
-        if result.insufficient_evidence or not allowlisted:
-            assistant.status = MessageStatus.INSUFFICIENT_EVIDENCE
-            assistant.generation_status = "insufficient_evidence"
+
+    # Fail closed: never mark completed without at least one allow-listed citation.
+    # Retrieval may have returned chunks, but an uncited / forged-citation answer is unsupported.
+    status = resolve_answer_status(
+        generator_insufficient_evidence=result.insufficient_evidence,
+        safe_citation_count=len(safe_citations),
+    )
+    if status is MessageStatus.INSUFFICIENT_EVIDENCE:
+        assistant.status = MessageStatus.INSUFFICIENT_EVIDENCE
+        assistant.generation_status = "insufficient_evidence"
+        if result.insufficient_evidence:
+            assistant.content = result.content
         else:
-            assistant.status = MessageStatus.COMPLETED
-            assistant.generation_status = "succeeded"
+            assistant.content = (
+                "Insufficient evidence: no answer is returned without citations "
+                "grounded in retrieved excerpts."
+            )
+        # Do not persist citations when the turn is insufficient_evidence.
     else:
         assistant.status = MessageStatus.COMPLETED
         assistant.generation_status = "succeeded"
-
-    for draft in safe_citations:
-        session.add(
-            MessageCitation(
-                message_id=assistant.id,
-                chunk_id=draft.chunk_id,
-                claim_index=draft.claim_index,
-                source_quote=draft.source_quote,
+        assistant.content = result.content
+        for draft in safe_citations:
+            session.add(
+                MessageCitation(
+                    message_id=assistant.id,
+                    chunk_id=draft.chunk_id,
+                    claim_index=draft.claim_index,
+                    source_quote=draft.source_quote,
+                )
             )
-        )
 
     conversation.title = (
         conversation.title if conversation.title != "New conversation" else question[:80]

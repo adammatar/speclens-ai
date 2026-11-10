@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Evaluation-driven AI platform for technical specifications"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "Proprietary" }
+license = "MIT"
+license-files = ["LICENSE"]
 
 [tool.ruff]
 target-version = "py312"
@@ -18,6 +19,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 "**/migrations/**" = ["E501"]
 "**/api/routes/**" = ["B008"]
 "**/security/auth.py" = ["B008"]
+"scripts/generate_eval_datasets.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -40,4 +42,15 @@ filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
 source = ["services/api/app", "workers/speclens_worker"]
-omit = ["*/migrations/*"]
+omit = [
+  "*/migrations/*",
+  "*/tests/*",
+  "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+]
+skip_empty = true

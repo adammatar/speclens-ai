@@ -115,6 +115,25 @@ export type Requirement = {
   review_state: string;
   confidence: number;
   sources: Array<Record<string, unknown>>;
+  section_path?: string;
+  original_payload?: Record<string, unknown>;
+  is_eval_example?: boolean;
+};
+
+export type EvaluationReport = {
+  generated_at?: string;
+  mode?: string;
+  synthetic_stub_badge?: boolean;
+  backends?: Record<string, string>;
+  dataset_version?: string;
+  dataset_counts?: Record<string, number>;
+  question_like_count?: number;
+  extraction_count?: number;
+  metrics?: Record<string, number>;
+  gates?: Record<string, { status?: string; threshold?: string; value?: number }>;
+  baseline_diff?: Record<string, { current: number; baseline: number; delta: number }>;
+  caveat?: string;
+  source?: string;
 };
 
 export type RequirementChange = {

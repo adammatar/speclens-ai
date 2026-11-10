@@ -1,38 +1,76 @@
 # SpecLens AI - Progress
 
-## Phase 0-10 + UX redesign
+## Phase 0-10 + UX redesign + Hebrew + portfolio + MIT
 
-**Status:** Complete on `main` (PRs #1–#11, #13 Gemini, #14 iOS Home workspace)
-
----
-
-## Hebrew / multilingual (H1–H4)
-
-**Status:** Implemented (awaiting review)
-
-**Date:** 2026-11-09
-
-**Branch:** `cursor/hebrew-i18n-multilingual-018c`
-
-### What shipped
-
-1. **H1** — Unicode stub embeddings; answering prompt answers in the user’s language; FTS switched to Postgres `simple`; docs for OpenAI multilingual embeddings at dims=256.
-2. **H2** — Hebrew modals in stub extraction; `openai_compat` extraction backend; Hebrew-aware compare tokenization / breaking heuristics; extraction prompt updated.
-3. **H3** — EN/HE UI toggle (top bar + Settings) with RTL; clearer “workspace access key” copy (not the LLM key).
-4. **H4** — Hebrew demos (`hebrew-john-biography`, `hebrew-access-control` v1/v2) + unit tests.
-
-### Explicit stop
-
-Merged to `main` (PR #15 / #16).
+**Status:** Complete on `main` (through PR #20)
 
 ---
 
-## Portfolio media refresh
+## Production / eval / UI hardening (active)
 
-**Status:** Implemented (awaiting review)
+**Branch:** `cursor/speclens-production-eval-ui-018c`  
+**Base commit reviewed:** `f244972`
 
-**Date:** 2026-11-09
+### Phase 1 — Citation fail-closed — COMPLETE
 
-**Branch:** `cursor/portfolio-media-refresh-018c`
+**Date:** 2026-11-10
 
-Re-ran Playwright capture against the new Home / SpecLens AI / Hebrew UI. Also fixed Chat enablement when document status is `ready` (was incorrectly requiring `succeeded`).
+Unsupported answers can no longer be marked `completed` when retrieval returned chunks but zero allow-listed citations survived filtering (including all-forged citations).
+
+### Phase 2 — Production auth & secret safety — COMPLETE
+
+**Date:** 2026-11-10
+
+- Migrations no longer leave the public bootstrap key active (`20261110_0009`).
+- Local/CI activate via `python -m app.cli bootstrap-local` / `make bootstrap-local`.
+- Hosted startup refuses weak DB passwords, `AUTH_REQUIRED=false`, and an active local bootstrap key.
+- Production Compose requires `POSTGRES_PASSWORD` and runs `check-startup` (never bootstrap-local).
+- Redis-backed rate limits in hosted mode; local memory fallback when Redis is down.
+- CLI: `keys create|list|disable|rotate` (hash-at-rest; plaintext once).
+
+### Phase 3 — Real evaluation harness — COMPLETE
+
+**Date:** 2026-11-10
+
+- Gold datasets no longer contain `predicted_*` values.
+- Runtime pipeline (ingest → embed → search → QA/extract/compare) produces predictions.
+- Stub mode enforced in CI with Postgres service; live mode optional.
+- Regression test: deliberately bad retrieval fails Recall@10 and `--enforce`.
+- Reports badge stub/synthetic results and record backends, commit, latencies.
+
+### Phase 4 — Product frontend surfaces — COMPLETE
+
+**Date:** 2026-11-10
+
+- Routes `/requirements`, `/compare`, `/evaluation` with EN/HE + RTL.
+- Authenticated `GET /api/v1/evaluation/latest` for the dashboard (no browser FS paths).
+- Settings reports deployment mode, auth, providers, retention, security notes.
+- Playwright smoke script for core routes; production web build passes.
+
+### Phase 5 — Retention, observability, backup — COMPLETE
+
+**Date:** 2026-11-10
+
+- Retention sweep CLI/Celery with dry-run; destructive mode gated by `RETENTION_SWEEP_ENABLED`.
+- Optional Sentry for API/workers with redaction; `X-Request-ID` correlation middleware.
+- Readiness checks Redis in hosted mode; backup verify script uses an isolated DB.
+
+### Phase 6 — Documentation & metadata — COMPLETE
+
+**Date:** 2026-11-10
+
+- MIT license metadata (PEP 621), security/deploy/evaluation/README/portfolio aligned with code.
+
+### Phase 7 — Dependency & security automation — COMPLETE
+
+**Date:** 2026-11-10
+
+- Dependabot, SECURITY.md, CI security job (pip-audit, npm audit high+, gitleaks, Trivy), coverage gate.
+
+### Phase 8 — Portfolio media refresh — COMPLETE
+
+**Date:** 2026-11-10
+
+- Portfolio screenshots + walkthrough regenerated (sign-in through Evaluation + Hebrew RTL).
+- README links updated for Requirements / Compare / Evaluation screens.
+

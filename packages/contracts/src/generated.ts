@@ -17,6 +17,7 @@ export type ApiPath =
   | "/api/v1/documents/versions/{document_version_id}/reprocess"
   | "/api/v1/documents/{document_id}"
   | "/api/v1/documents/{document_id}/versions"
+  | "/api/v1/evaluation/latest"
   | "/api/v1/extractions/{job_id}"
   | "/api/v1/health"
   | "/api/v1/meta"
@@ -51,6 +52,7 @@ export const knownPaths: readonly ApiPath[] = [
   "/api/v1/documents/versions/{document_version_id}/reprocess",
   "/api/v1/documents/{document_id}",
   "/api/v1/documents/{document_id}/versions",
+  "/api/v1/evaluation/latest",
   "/api/v1/extractions/{job_id}",
   "/api/v1/health",
   "/api/v1/meta",

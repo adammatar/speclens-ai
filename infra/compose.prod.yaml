@@ -1,5 +1,9 @@
 # Production-style SpecLens stack (API + worker + web + data plane).
 # Postgres/Redis are not published to the host. Web terminates HTTP and proxies /api.
+#
+# Required env (no insecure defaults):
+#   POSTGRES_PASSWORD  — strong secret (never speclens_dev_password)
+# Optional: POSTGRES_USER, POSTGRES_DB, CORS_ORIGINS, SENTRY_DSN, WEB_PORT
 name: speclens-prod
 
 services:
@@ -7,7 +11,7 @@ services:
     image: pgvector/pgvector:pg16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-speclens}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-speclens_dev_password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set for production Compose}
       POSTGRES_DB: ${POSTGRES_DB:-speclens}
     volumes:
       - speclens_pgdata_prod:/var/lib/postgresql/data
@@ -35,7 +39,7 @@ services:
       - path: ../.env
         required: false
     environment:
-      DATABASE_URL: postgresql+psycopg://speclens:${POSTGRES_PASSWORD:-speclens_dev_password}@postgres:5432/speclens
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-speclens}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-speclens}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
@@ -58,8 +62,11 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+    # Migrations only — never bootstrap-local in production.
+    # Create keys with: docker compose ... exec api python -m app.cli keys create ...
     command: >
       sh -c "alembic upgrade head &&
+             python -m app.cli check-startup &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   worker:
@@ -72,12 +79,14 @@ services:
       - path: ../.env
         required: false
     environment:
-      DATABASE_URL: postgresql+psycopg://speclens:${POSTGRES_PASSWORD:-speclens_dev_password}@postgres:5432/speclens
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-speclens}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-speclens}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
       STORAGE_LOCAL_ROOT: /data/storage
       SPECLENS_ENV: ${SPECLENS_ENV:-production}
+      SPECLENS_DEPLOYMENT_MODE: hosted
+      AUTH_REQUIRED: "true"
     volumes:
       - speclens_storage_prod:/data/storage
     depends_on:
