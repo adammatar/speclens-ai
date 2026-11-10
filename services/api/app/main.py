@@ -29,6 +29,9 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     import logging
     import os
 
+    from app.core.security_startup import assert_safe_for_hosted
+    from app.db.session import SessionLocal
+
     settings = get_settings()
     configure_logging(settings.speclens_log_level)
     logging.getLogger(__name__).info(
@@ -39,6 +42,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         settings.extraction_backend,
         os.environ.get("GENERATION_BACKEND"),
     )
+    session = SessionLocal()
+    try:
+        assert_safe_for_hosted(settings, session)
+    finally:
+        session.close()
     yield
 
 

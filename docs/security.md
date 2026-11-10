@@ -39,13 +39,19 @@ Logs may contain IDs, timings, token counts, model names - **not** raw document 
 4. Complete deletion must remove object bytes, chunks, embeddings, and derived requirements.
 5. Cross-workspace access must fail closed; every query filters by workspace.
 
-## Authentication and authorization (Phase 8)
+## Authentication and authorization (Phase 8+)
 
-- **API keys:** `Authorization: Bearer <key>` or `X-API-Key: <key>`. Keys are stored as SHA-256 hashes (`api_keys.key_hash`); plaintext is never persisted.
+- **API keys:** `Authorization: Bearer <key>` or `X-API-Key: <key>`. Keys are stored as SHA-256 hashes (`api_keys.key_hash`); plaintext is never persisted and must not appear in logs.
 - **Roles:** `owner` > `editor` > `viewer` via `workspace_memberships`.
-- **Public routes:** `/api/v1/health` and `/api/v1/ready` only.
-- **Local/CI bootstrap:** migration seeds `local-admin@speclens.local` as owner of the default workspace with key `speclens-local-dev-key` (documented in `.env.example` only - not for production).
-- **Rate limits:** in-process per-key buckets on upload / QA / extract / compare (`RATE_LIMIT_PER_MINUTE`, default 120).
+- **Public routes:** `/api/v1/health` and `/api/v1/ready` only (see also `/api/v1/meta` if exposed — never secrets).
+- **Local/CI bootstrap:** schema migrations do **not** activate the known public key. Local Compose and CI run `python -m app.cli bootstrap-local` (or `make bootstrap-local`) to activate `speclens-local-dev-key` for the default workspace owner. Production Compose must never run bootstrap-local.
+- **Production key lifecycle:**
+  - Create: `python -m app.cli keys create --email you@example.com --name prod` (plaintext shown once).
+  - List metadata: `python -m app.cli keys list`
+  - Revoke: `python -m app.cli keys disable --id <uuid>`
+  - Rotate: `python -m app.cli keys rotate --id <uuid>` (old key disabled; new plaintext shown once).
+- **Hosted startup guards:** `SPECLENS_DEPLOYMENT_MODE=hosted` or `SPECLENS_ENV=production` refuses boot when `AUTH_REQUIRED=false`, a known development DB password is used, or the local bootstrap key is active (`python -m app.cli check-startup`).
+- **Rate limits:** Redis-backed sliding windows shared across API instances in hosted mode (`RATE_LIMIT_PER_MINUTE`, default 120) on upload / QA / extract / compare. Redis keys store a SHA-256 fingerprint of the credential, never the raw token. Local/test falls back to in-process memory when Redis is unavailable.
 - **Audit:** `audit_events` for upload, delete, export, requirement accept, and change confirm (no document bodies in `detail`).
 
 ## Local mode vs hosted mode
@@ -53,17 +59,18 @@ Logs may contain IDs, timings, token counts, model names - **not** raw document 
 | Concern | Local mode | Hosted mode |
 | --- | --- | --- |
 | Document location | Local disk / local object store | Managed object storage |
-| Auth | Bootstrap API key + hashed keys | Real auth + RBAC (OIDC later) |
+| Auth | Optional `bootstrap-local` + hashed keys | High-entropy keys via CLI; bootstrap key forbidden |
 | Outbound LLM | Optional / user-configured key | Platform-managed |
 | Network exposure | Bind localhost by default | HTTPS public API |
 | Retention | `RETENTION_DAYS` + user wipe | Configurable retention + audit |
+| Rate limit | Redis preferred; memory fallback | Redis required (503 if unavailable) |
 
 ## Secret management
 
 1. Copy `.env.example` → `.env` locally; never commit `.env`.
-2. Compose loads `.env.example` for stub stacks; replace passwords/keys before any shared environment.
+2. Local Compose may use `speclens_dev_password`; production Compose requires `POSTGRES_PASSWORD` with no insecure fallback.
 3. OpenAI keys stay in server env only - never ship in `apps/web` or contracts packages.
-4. Rotate the bootstrap API key before production by inserting a new hashed key and disabling the seed key.
+4. Never advertise `speclens-local-dev-key` for hosted deployments. Create, rotate, and revoke keys with `python -m app.cli keys …`.
 
 ## Upload hardening
 

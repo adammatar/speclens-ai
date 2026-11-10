@@ -4,7 +4,7 @@ COMPOSE_PROD := docker compose --env-file .env -f infra/compose.prod.yaml
 PYTHON ?= python3
 API_DIR := services/api
 
-.PHONY: help up up-prod down logs build migrate test lint typecheck format contracts smoke clean install-dev eval web web-build demo-reset portfolio-media
+.PHONY: help up up-prod down logs build migrate test lint typecheck format contracts smoke clean install-dev eval web web-build demo-reset portfolio-media bootstrap-local
 
 help:
 	@echo "SpecLens AI developer targets"
@@ -21,8 +21,12 @@ help:
 	@echo "  make web        Run React+Vite dev server"
 	@echo "  make web-build  Production build of apps/web"
 	@echo "  make demo-reset Reset default workspace and re-seed sample.md"
+	@echo "  make bootstrap-local  Seed local/CI API key (never in production)"
 	@echo "  make portfolio-media  Playwright screenshots + demo video"
 	@echo "  make install-dev Install local Python dev dependencies"
+
+bootstrap-local:
+	$(COMPOSE) exec -T api python -m app.cli bootstrap-local
 
 install-dev:
 	$(PYTHON) -m pip install -e "$(API_DIR)[dev]"
