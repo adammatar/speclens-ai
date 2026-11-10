@@ -1,8 +1,10 @@
 # SpecLens AI
 
-**Ask clear, cited questions about technical specifications — with retrieval, requirement extraction, version compare, and offline evaluation gates.**
+**Working with a huge spec?** Word struggles to open it. Search never finds the exact clause. Scrolling forever isn’t a strategy.
 
-SpecLens AI is a full-stack portfolio project: upload Markdown/PDF/DOCX specs, chat in plain language (English or Hebrew), keep document versions, and only trust model answers that stay grounded in retrieved evidence.
+**Load the file into SpecLens AI and chat with it** — answers stay grounded in the document, with citations you can check.
+
+A full-stack portfolio project for technical specifications: upload Markdown/PDF/DOCX, chat in plain language (English or Hebrew), keep document versions, extract requirements, compare changes, and measure quality with offline evaluation gates.
 
 | | |
 | --- | --- |
@@ -15,7 +17,9 @@ SpecLens AI is a full-stack portfolio project: upload Markdown/PDF/DOCX specs, c
 
 ## Why it exists
 
-Engineering teams live in long specs. Generic chatbots invent citations; spreadsheets drift from source; version diffs are noisy. SpecLens keeps **evidence and eval gates** next to every AI step — so answers are inspectable, not magical.
+Big specs are painful in everyday tools: the file is too large to open smoothly, text editors and Word choke, and finding the one requirement you need is a scavenger hunt. Generic chatbots invent citations; spreadsheet extractions drift from source; version diffs are noisy.
+
+SpecLens is the place you **load the file and ask** — with **evidence and eval gates** next to every AI step, so answers are inspectable, not magical.
 
 ## Features
 
