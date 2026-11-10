@@ -15,6 +15,7 @@ from app.api.routes import (
     comparisons,
     conversations,
     documents,
+    evaluation,
     health,
     meta,
     requirements,
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     application.include_router(conversations.router, prefix="/api/v1")
     application.include_router(requirements.router, prefix="/api/v1")
     application.include_router(comparisons.router, prefix="/api/v1")
+    application.include_router(evaluation.router, prefix="/api/v1")
 
     def custom_openapi() -> dict[str, Any]:
         if application.openapi_schema:

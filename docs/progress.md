@@ -38,4 +38,13 @@ Unsupported answers can no longer be marked `completed` when retrieval returned 
 - Regression test: deliberately bad retrieval fails Recall@10 and `--enforce`.
 - Reports badge stub/synthetic results and record backends, commit, latencies.
 
-Remaining phases (4–8): product UI, retention/observability, docs, security automation, portfolio media — in progress.
+### Phase 4 — Product frontend surfaces — COMPLETE
+
+**Date:** 2026-11-10
+
+- Routes `/requirements`, `/compare`, `/evaluation` with EN/HE + RTL.
+- Authenticated `GET /api/v1/evaluation/latest` for the dashboard (no browser FS paths).
+- Settings reports deployment mode, auth, providers, retention, security notes.
+- Playwright smoke script for core routes; production web build passes.
+
+Remaining phases (5–8): retention/observability, docs, security automation, portfolio media — in progress.

@@ -7,6 +7,7 @@ import type {
   ConversationSummary,
   DocumentDetail,
   DocumentSummary,
+  EvaluationReport,
   JobStatus,
   MetaInfo,
   Requirement,
@@ -140,6 +141,42 @@ export async function listRequirements(
     ? `?document_version_id=${documentVersionId}`
     : `?workspace_id=${DEFAULT_WORKSPACE_ID}`;
   return request(`/api/v1/requirements${qs}`, apiKey);
+}
+
+export async function patchRequirement(
+  apiKey: string,
+  requirementId: string,
+  body: { review_state?: string; statement?: string },
+): Promise<Requirement> {
+  return request(`/api/v1/requirements/${requirementId}`, apiKey, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function exportRequirements(
+  apiKey: string,
+  documentVersionId: string,
+  format: "json" | "csv",
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE}/api/v1/requirements/export?document_version_id=${documentVersionId}&format=${format}`,
+    { headers: authHeaders(apiKey) },
+  );
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseError(response));
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = format === "json" ? "requirements.json" : "requirements.csv";
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function getLatestEvaluation(apiKey: string): Promise<EvaluationReport> {
+  return request("/api/v1/evaluation/latest", apiKey);
 }
 
 export async function listConversations(apiKey: string): Promise<ConversationSummary[]> {

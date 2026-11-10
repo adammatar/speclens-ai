@@ -49,6 +49,8 @@ services:
       - "8001:8000"
     volumes:
       - ../data/storage:/data/storage
+      - ../artifacts/eval:/app/artifacts/eval:ro
+      - ../evals/reports:/app/evals/reports:ro
     depends_on:
       postgres:
         condition: service_healthy
