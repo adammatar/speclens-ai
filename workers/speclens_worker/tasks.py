@@ -19,6 +19,31 @@ def noop_job(payload: dict[str, Any] | None = None) -> dict[str, Any]:
     return {"status": "ok", "echo": data}
 
 
+@app.task(name="speclens.retention_sweep")  # type: ignore[untyped-decorator]
+def retention_sweep(dry_run: bool = True) -> dict[str, Any]:
+    """Delete documents older than RETENTION_DAYS (disabled unless explicitly enabled)."""
+    from app.core.config import get_settings
+    from app.db.session import get_session_factory
+    from app.retention.service import run_retention_sweep
+
+    settings = get_settings()
+    if not dry_run and not settings.retention_sweep_enabled:
+        logger.warning("retention_sweep_skipped_disabled")
+        return {"status": "skipped", "reason": "RETENTION_SWEEP_ENABLED is false"}
+    session = get_session_factory()()
+    try:
+        result = run_retention_sweep(session, dry_run=dry_run, settings=settings)
+        return {
+            "status": "ok",
+            "dry_run": result.dry_run,
+            "candidates": len(result.candidates),
+            "deleted": len(result.deleted_ids),
+            "errors": result.errors,
+        }
+    finally:
+        session.close()
+
+
 @app.task(name="speclens.embed_document_version", bind=True, max_retries=3, default_retry_delay=5)  # type: ignore[untyped-decorator]
 def embed_document_version(self: Any, document_version_id: str) -> dict[str, object]:
     """Embed all chunks for a document version."""

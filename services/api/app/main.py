@@ -23,6 +23,8 @@ from app.api.routes import (
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.observability.correlation import CorrelationIdMiddleware
+from app.observability.sentry import init_sentry
 
 
 @asynccontextmanager
@@ -35,6 +37,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     settings = get_settings()
     configure_logging(settings.speclens_log_level)
+    init_sentry(
+        dsn=settings.sentry_dsn,
+        environment=settings.speclens_env,
+        service="api",
+    )
     logging.getLogger(__name__).info(
         "speclens_backends embedding=%s generation=%s/%s extraction=%s env_generation=%s",
         settings.embedding_backend,
@@ -68,6 +75,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    application.add_middleware(CorrelationIdMiddleware)
     application.include_router(health.router, prefix="/api/v1")
     application.include_router(meta.router, prefix="/api/v1")
     application.include_router(documents.router, prefix="/api/v1")

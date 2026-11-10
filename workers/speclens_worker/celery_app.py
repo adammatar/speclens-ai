@@ -29,3 +29,17 @@ app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
 )
+
+# Optional Sentry for workers (no-op when SENTRY_DSN is empty).
+try:
+    from app.core.config import get_settings
+    from app.observability.sentry import init_sentry
+
+    _settings = get_settings()
+    init_sentry(
+        dsn=_settings.sentry_dsn,
+        environment=_settings.speclens_env,
+        service="worker",
+    )
+except Exception:  # noqa: BLE001
+    pass

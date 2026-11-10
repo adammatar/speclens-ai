@@ -159,6 +159,38 @@ def cmd_check_startup(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_retention_sweep(args: argparse.Namespace) -> int:
+    from app.retention.service import run_retention_sweep
+
+    settings = get_settings()
+    dry_run = not args.execute
+    if not dry_run and not settings.retention_sweep_enabled and not args.force:
+        print(
+            "Refusing destructive retention sweep: set RETENTION_SWEEP_ENABLED=true "
+            "or pass --force (hosted ops only).",
+            file=sys.stderr,
+        )
+        return 2
+    session = _session()
+    try:
+        result = run_retention_sweep(session, dry_run=dry_run, settings=settings)
+    finally:
+        session.close()
+    print(
+        f"Retention sweep dry_run={result.dry_run} days={result.retention_days} "
+        f"candidates={len(result.candidates)} deleted={len(result.deleted_ids)} "
+        f"errors={len(result.errors)}"
+    )
+    for candidate in result.candidates[:20]:
+        print(
+            f"  {candidate.document_id} workspace={candidate.workspace_id} "
+            f"created={candidate.created_at.isoformat()} versions={candidate.version_count}"
+        )
+    for err in result.errors:
+        print(f"  error: {err}", file=sys.stderr)
+    return 1 if result.errors else 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -168,6 +200,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_check = sub.add_parser("check-startup", help="Run hosted/production security checks")
     p_check.set_defaults(func=cmd_check_startup)
+
+    p_ret = sub.add_parser("retention-sweep", help="Delete documents older than RETENTION_DAYS")
+    p_ret.add_argument(
+        "--execute",
+        action="store_true",
+        help="Perform deletes (default is dry-run)",
+    )
+    p_ret.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow deletes even when RETENTION_SWEEP_ENABLED is false",
+    )
+    p_ret.set_defaults(func=cmd_retention_sweep)
 
     keys = sub.add_parser("keys", help="API key management")
     keys_sub = keys.add_subparsers(dest="keys_command", required=True)

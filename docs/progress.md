@@ -47,4 +47,12 @@ Unsupported answers can no longer be marked `completed` when retrieval returned 
 - Settings reports deployment mode, auth, providers, retention, security notes.
 - Playwright smoke script for core routes; production web build passes.
 
-Remaining phases (5–8): retention/observability, docs, security automation, portfolio media — in progress.
+### Phase 5 — Retention, observability, backup — COMPLETE
+
+**Date:** 2026-11-10
+
+- Retention sweep CLI/Celery with dry-run; destructive mode gated by `RETENTION_SWEEP_ENABLED`.
+- Optional Sentry for API/workers with redaction; `X-Request-ID` correlation middleware.
+- Readiness checks Redis in hosted mode; backup verify script uses an isolated DB.
+
+Remaining phases (6–8): docs/metadata, security automation, portfolio media — in progress.

@@ -80,17 +80,33 @@ Logs may contain IDs, timings, token counts, model names - **not** raw document 
 
 ## Retention and deletion
 
-- `RETENTION_DAYS` (default 365) is the configured retention horizon for hosted policy docs and future sweep jobs.
+- `RETENTION_DAYS` (default 365) is **deployment-wide** (not per-workspace in this iteration).
+- `python -m app.cli retention-sweep` dry-runs by default; `--execute` deletes expired documents (source bytes, chunks/embeddings, requirements, comparisons via cascades).
+- Destructive sweeps require `RETENTION_SWEEP_ENABLED=true` (or `--force`). Local development does **not** auto-run destructive retention.
+- Celery task `speclens.retention_sweep` mirrors the CLI; schedule it only in hosted environments.
+- Audit events record `retention.delete` with ages/counts — never document titles or bodies.
 - `DELETE /api/v1/documents/{id}` removes DB rows (cascading chunks/embeddings/jobs) and object-store bytes.
-- Derived requirements/comparisons cascade with document versions.
+
+## Observability
+
+- Optional `SENTRY_DSN` initializes Sentry for the API and Celery workers. Empty DSN = no SDK init.
+- `before_send` redacts Authorization headers, API keys, document bodies, prompts, and source quotes.
+- Every HTTP response includes `X-Request-ID` (honors inbound value when present) for log/job correlation.
+
+## Health checks
+
+- `/api/v1/health` — liveness (process up).
+- `/api/v1/ready` — readiness (database required; Redis required in hosted/production).
+- Recommended uptime: poll `/health` frequently and `/ready` before sending traffic; alert on worker queue depth separately (Celery/Redis).
 
 ## Backup and restore (local / Compose)
 
 1. **Logical backup:** `docker compose -f infra/compose.yaml exec -T postgres pg_dump -U speclens speclens > backup.sql`
 2. **Object store:** copy `data/storage/` alongside the dump.
 3. **Restore:** recreate volumes (`make down`), `make up`, then `psql` restore and restore `data/storage/`.
-4. Verify with `/api/v1/ready` and a authenticated document list/search smoke.
-5. Hosted deployments should use managed Postgres PITR + object-store versioning (Phase 9).
+4. Verify with `/api/v1/ready` and an authenticated document list/search smoke.
+5. **Automated check:** `./scripts/verify_backup_restore.sh` uses an isolated temporary database and does not destroy developer data.
+6. Hosted deployments should use managed Postgres PITR + object-store versioning.
 
 ## Security checklist (Phase 8)
 

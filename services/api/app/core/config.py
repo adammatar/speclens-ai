@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     auth_required: bool = True
     rate_limit_per_minute: int = 120
     retention_days: int = 365
+    # Destructive retention sweeps are off by default (especially local/dev).
+    retention_sweep_enabled: bool = False
+    sentry_dsn: str = ""
     # Comma-separated browser origins for the React SPA (local Vite + prod web).
     cors_origins: str = (
         "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:3000,http://localhost:3000"
