@@ -146,4 +146,6 @@ Greenfield phased build: foundation → ingest → retrieval → cited QA → ex
 
 ## License
 
-© Adam Matar. Source is published for portfolio review. All rights reserved unless otherwise noted — contact the author for reuse beyond evaluation/interview purposes.
+[MIT](LICENSE) © 2026 Adam Matar
+
+Free to use, modify, and share — including commercially — as long as you keep the copyright notice and license text (your attribution to **Adam Matar** stays with the code). See [`LICENSE`](LICENSE).
