@@ -20,18 +20,18 @@
   <!-- API -->
   <rect x="320" y="110" width="220" height="110" rx="14" fill="#1a333a"/>
   <text x="430" y="148" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#F4F8F9">FastAPI</text>
-  <text x="430" y="172" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">auth · search · QA · extract · compare</text>
+  <text x="430" y="172" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">auth Â· search Â· QA Â· extract Â· compare</text>
   <text x="430" y="194" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">OpenAPI contracts</text>
 
   <!-- Worker -->
   <rect x="620" y="110" width="200" height="110" rx="14" fill="#1a333a"/>
   <text x="720" y="155" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="16" fill="#F4F8F9">Celery workers</text>
-  <text x="720" y="180" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">ingest · embed · extract · compare</text>
+  <text x="720" y="180" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#7EB8C9">ingest Â· embed Â· extract Â· compare</text>
 
   <!-- Data plane -->
   <rect x="160" y="320" width="180" height="100" rx="14" fill="#ffffff" stroke="#0B1F24" stroke-width="2"/>
   <text x="250" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#0B1F24">Postgres + pgvector</text>
-  <text x="250" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">chunks · FTS · HNSW</text>
+  <text x="250" y="384" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">chunks Â· FTS Â· HNSW</text>
 
   <rect x="390" y="320" width="180" height="100" rx="14" fill="#ffffff" stroke="#0B1F24" stroke-width="2"/>
   <text x="480" y="360" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="15" fill="#0B1F24">Redis</text>
@@ -54,5 +54,5 @@
   <line x1="720" y1="220" x2="720" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
   <line x1="720" y1="220" x2="550" y2="320" stroke="#0B1F24" stroke-width="2" marker-end="url(#arrow)"/>
 
-  <text x="40" y="500" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">Stub or OpenAI backends for embeddings / generation / extraction · API keys never in the browser bundle</text>
+  <text x="40" y="500" font-family="Helvetica, Arial, sans-serif" font-size="12" fill="#4a6670">Stub or OpenAI backends for embeddings / generation / extraction Â· API keys never in the browser bundle</text>
 </svg>

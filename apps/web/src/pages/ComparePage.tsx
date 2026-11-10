@@ -141,6 +141,7 @@ export function ComparePage() {
         <button
           type="button"
           className="btn"
+          data-testid="compare-start"
           disabled={busy || !baseId || !targetId || baseId === targetId}
           onClick={() => void onCompare()}
         >
@@ -208,9 +209,9 @@ export function ComparePage() {
           <h2 style={{ fontSize: "1.05rem" }}>
             {t(`cmp.cat.${group.category}`)} ({group.items.length})
           </h2>
-          <ul className="change-list">
+          <ul className="change-list" data-testid="compare-change-list">
             {group.items.map((change) => (
-              <li key={change.id} className="change-item">
+              <li key={change.id} className="change-item" data-testid="compare-change-item">
                 <div className="stack" style={{ gap: "0.35rem" }}>
                   <strong>{change.category}</strong>
                   <p>
